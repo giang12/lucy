@@ -2,9 +2,13 @@
 
 1. npm install
 
-2. rename ./config-example -> ./config & set approriate config (keys included are dev keys so yeah)
+2. download approriate ffmpeg binary fo yo system @ [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
+		
+		"The ffmpeg binary included for SNOW LEOPARD ABOVE AND/OR INTEL ONLY 64-BIT"
 
-3. node lucy.js
+3. rename ./config-example -> ./config & set approriate config (keys included are dev keys so yeah)
+
+4. node lucy.js
 
 
 #folders:
