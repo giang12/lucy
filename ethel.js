@@ -9,13 +9,9 @@ var SpotifyWebApi = require('spotify-web-api-node');
 var jsonfile = require('jsonfile');
 var Q = require('q');
 
-var scopes = ['playlist-read-private', 'playlist-read-collaborative', 'user-library-read', 'user-read-email', 'user-follow-read'];
+var scopes = require("./config/credentials.json").spotify_scopes;
 
-var credentials = {
-    clientId: '35980535d5e94180a3244e5c4f5eb583',
-    clientSecret: 'cb562cf480ee495597081aaea4455019',
-    redirectUri: 'http://localhost:8888/authCallback'
-};
+var credentials = require("./config/credentials.json").spotifyWebApi;
 
 var spotifyApi = new SpotifyWebApi(credentials);
 
