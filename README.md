@@ -1,5 +1,6 @@
-# lucy
+# lucy 
 
+[https://www.youtube.com/watch?v=iGmMrCsGoeo](https://www.youtube.com/watch?v=iGmMrCsGoeo)
 1. npm install
 
 2. download approriate ffmpeg binary fo yo system @ [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
@@ -49,5 +50,7 @@
 -Cache queries
 
 	-Cache success queries(by time 12h, self-destruct cache folder)
+	
+-Be cool to search soundclound, torrents
 
 	
