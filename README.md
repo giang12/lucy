@@ -10,6 +10,12 @@
 
 4. node lucy.js
 
+		Or to keep it running forever:[https://www.npmjs.com/package/forever](https://www.npmjs.com/package/forever)
+		
+		[sudo] npm install -g forever
+		
+		forever start lucy.js
+
 
 #folders:
 
