@@ -180,11 +180,11 @@ function _tubeHandler(_tube_, _track_, res) {
 
         var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
 
-         console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
+        // console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
 
         if (nameInTitle || (nameInTitleScore > 0.95)) {
 
-            console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
+            //   console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
 
             var shouldUseNewResult = true;
             if (tempScore === suppaWillyScore) {
@@ -281,14 +281,14 @@ exports.search_your_tube = function(_tube_, _track_) {
 
     var query = _track_["name"] + " + " + _track_["artist"] + (_track_["album_artist"] == _track_["artist"] ? "" : " + " + _track_["album_artist"]);
     console.log(_track_);
-    console.log("Searching query:", query);
-
+    var order = (Math.random() < 0.5 ? 'relevance' : 'viewCount'); //rating
+    console.log("Searching query(orderBY ", order, "):", query);
     _tube_.search.list({
             part: 'snippet',
             type: 'video',
             q: query,
             maxResults: 50,
-            order: (Math.random() < 0.5 ? 'relevance' : 'viewCount'), //viewCount relevance rating
+            order: order, //viewCount relevance rating
             //safeSearch: 'moderate',
             videoEmbeddable: true
         },
