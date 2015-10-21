@@ -1,6 +1,7 @@
 var spotify_daemon = require('./lib/spotify-node-applescript.js');
 var search_your_tube = require('./ricky.js').search_your_tube;
 var jsonfile = require('jsonfile');
+var Q = require('q');
 
 var ytdl = require('ytdl-core');
 var YoutubeMp3Downloader = require('youtube-mp3-downloader');
@@ -10,28 +11,46 @@ var TRACK_AUDIO = "";
 var TRACK_INFO = "";
 var TRACK_VIDEO = "";
 
-
 function golden_retriever(_tube_, _trackID_) {
+    var deferred = Q.defer();
 
     console.log("Retrieving", _trackID_);
 
     spotify_daemon.getTrack(function(_error_, _track_) {
-        if (_error_) return console.log("The puppy got lost yo");
 
-        return search_your_tube(_tube_, _track_, save_the_baby);
+        if (_error_) return deferred.reject("The puppy got lost yo");
+        var ret = {
+            song: _track_,
+            video: null,
+            score: 0
+        };
+        search_your_tube(_tube_, _track_)
+            .then(function success(value) {
+
+                ret.video = value.video;
+                ret.score = value.score;
+
+                save_the_baby(ret);
+
+                deferred.resolve(ret);
+
+            }, function error(reason) {
+                deferred.reject(reason);
+            });
     });
+
+    return deferred.promise;
 }
 
-function save_the_baby(_error_, _newborn_) {
+function save_the_baby(_newborn_) {
 
-    if (_error_) return console.log(_error_);
-
-    console.log(_newborn_["video"]["urlLong"]);
 
 
     jsonfile.readFile(TRACK_INFO + _newborn_["song"]["id"], function(err, obj) {
 
         if (err || _newborn_.score > obj.score) {
+            console.log(_newborn_["video"]["urlShort"]);
+
             console.log("Saving Track:", _newborn_["song"]["id"], "(" + _newborn_["song"]["name"] + ") matched to YT ID:", _newborn_["video"]["urlShort"], "(" + _newborn_["video"]["title"] + "|" + _newborn_["video"]["channelTitle"] + ") | SCORE:", _newborn_["score"]);
 
 
@@ -63,10 +82,12 @@ function save_the_baby(_error_, _newborn_) {
             jsonfile.writeFile(TRACK_INFO + _newborn_["song"]["id"], _newborn_, {
                 spaces: 2
             }, function(err) {
-                if(err) console.log(err);
+                if (err) console.log(err);
             });
             return _newborn_;
-        }else{
+        } else {
+            console.log(obj["video"]["urlShort"]);
+
             console.log("Track in Vault:", obj["song"]["id"], "(" + obj["song"]["name"] + ") matched to YT ID:", obj["video"]["urlShort"], "(" + obj["video"]["title"] + "|" + obj["video"]["channelTitle"] + ") | SCORE:", obj["score"]);
             return obj;
         }
@@ -75,7 +96,7 @@ function save_the_baby(_error_, _newborn_) {
 }
 
 function setVault(_vault_) {
-    
+
     VAULT = _vault_ + "/vault/";
     TRACK_AUDIO = VAULT + "track_audio/";
     TRACK_INFO = VAULT + "track_info/";
@@ -85,6 +106,6 @@ function setVault(_vault_) {
 exports.checkVault = function(_tube_, _trackID_, _vault_) {
 
     setVault(_vault_);
-    console.log("Checking",_trackID_,"in", VAULT);
+    console.log("Checking", _trackID_, "in", VAULT);
     return golden_retriever(_tube_, _trackID_);
 };

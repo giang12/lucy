@@ -75,7 +75,7 @@ Youtube authenticate
 tracking['track_id'].push(
     //check vault, add/update best matched songs to vault
     function(track_id) {
-        return Fred.checkVault(Youtube, track_id, VAULT);
+        return Fred.checkVault(Youtube, track_id, VAULT).done();
     }
 );
 
