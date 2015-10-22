@@ -4,7 +4,7 @@
 var path = require('path'),
     querystring = require('querystring'),
     request = require('request'),
-    fs = require('fs');
+    fs = require('fs-extra');
 var SpotifyWebApi = require('spotify-web-api-node');
 var jsonfile = require('jsonfile');
 var Q = require('q');
@@ -58,12 +58,46 @@ Ethel.prototype.setAccessTokens = function(spotifyApi) {
         if (err) {
             deferred.reject(err);
         } else {
-            
+
             spotifyApi.setAccessToken(obj['access_token']);
             spotifyApi.setRefreshToken(obj['refresh_token']);
             deferred.resolve(spotifyApi);
         }
     });
+    return deferred.promise;
+};
+
+var _setUser = function(spotifyApi, data) {
+
+    var deferred = Q.defer();
+
+    var expireDate = new Date();
+    expireDate.setSeconds(expireDate.getSeconds() + (parseInt(data.body['expires_in'], 10) - 72));
+
+    var access_token = data.body['access_token'] || spotifyApi.getAccessToken();
+    var refresh_token = data.body['refresh_token'] || spotifyApi.getRefreshToken();
+    var user = {
+        expires_at: expireDate.toString(),
+        access_token: access_token,
+        refresh_token: refresh_token,
+        info: null,
+    };
+
+    spotifyApi.setAccessToken(access_token);
+    spotifyApi.setRefreshToken(refresh_token);
+
+    // Get the authenticated user
+    spotifyApi.getMe()
+        .then(function(data) {
+            // console.log('Some information about the authenticated user', data.body);
+            user.info = data.body;
+            deferred.resolve(user);
+
+        }, function(err) {
+            console.log('Something went wrong!', err);
+            deferred.reject(new Error(err));
+        }).done();
+
     return deferred.promise;
 };
 
@@ -80,35 +114,10 @@ Ethel.prototype.getUser = function(code) {
     // Retrieve an access token and a refresh token
     spotifyApi.authorizationCodeGrant(code)
         .then(function(data) {
-
             // console.log('The token expires in ' + data.body['expires_in']);
             // console.log('The access token is ' + data.body['access_token']);
             // console.log('The refresh token is ' + data.body['refresh_token']);
-
-            // Set the access token on the API object to use it in later calls
-            spotifyApi.setAccessToken(data.body['access_token']);
-            spotifyApi.setRefreshToken(data.body['refresh_token']);
-
-            var expireDate = new Date();
-            expireDate.setSeconds(expireDate.getSeconds() + (parseInt(data.body['expires_in'], 10) - 300));
-
-            var user = {
-                expire: expireDate.toString(),
-                access_token: data.body['access_token'],
-                refresh_token: data.body['refresh_token'],
-                info: null,
-            };
-            // Get the authenticated user
-            spotifyApi.getMe()
-                .then(function(data) {
-                    // console.log('Some information about the authenticated user', data.body);
-                    user.info = data.body;
-                    deferred.resolve(user);
-
-                }, function(err) {
-                    console.log('Something went wrong!', err);
-                    deferred.reject(new Error(err));
-                });
+            deferred.resolve(_setUser(spotifyApi, data));
 
         }, function(err) {
             console.log('Something went wrong!', err);
@@ -119,6 +128,36 @@ Ethel.prototype.getUser = function(code) {
 
 };
 
+//lol
+Ethel.prototype.entertainUser = function() {
+    // requesting access token from refresh token
+
+    var deferred = Q.defer();
+    var self = this;
+    // clientId, clientSecret and refreshToken has been set on the api object previous to this call.
+    self.getSpotifyApi_WTokens().then(
+
+        function(spotifyApi) {
+
+            spotifyApi.refreshAccessToken().then(
+
+                function(data) {
+
+                    data.body.refresh_token = spotifyApi.getRefreshToken();
+                    deferred.resolve(_setUser(spotifyApi, data));
+                },
+                function(err) {
+                    deferred.reject(new Error(err));
+                });
+        },
+        function(err) {
+
+            deferred.reject(new Error(err));
+        }).done();
+
+    return deferred.promise;
+
+};
 
 
 var _getPlaylists = function(spotifyApi, userID) {
@@ -233,32 +272,4 @@ module.exports = Ethel;
 //         });
 //     }
 
-// };
-
-
-
-
-// exports.refresh_token = function(req, res) {
-//     // requesting access token from refresh token
-//     var refresh_token = req.query.refresh_token;
-//     var authOptions = {
-//         url: 'https://accounts.spotify.com/api/token',
-//         headers: {
-//             'Authorization': 'Basic ' + (new Buffer(spotifyConfig.client_id + ':' + spotifyConfig.client_secret).toString('base64'))
-//         },
-//         form: {
-//             grant_type: 'refresh_token',
-//             refresh_token: refresh_token
-//         },
-//         json: true
-//     };
-
-//     request.post(authOptions, function(error, response, body) {
-//         if (!error && response.statusCode === 200) {
-//             var access_token = body.access_token;
-//             res.send({
-//                 'access_token': access_token
-//             });
-//         }
-//     });
 // };

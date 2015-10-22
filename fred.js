@@ -1,3 +1,4 @@
+var fs = require('fs-extra');
 var spotify_daemon = require('./lib/spotify-node-applescript.js');
 var jsonfile = require('jsonfile');
 var Q = require('q');
@@ -8,28 +9,80 @@ var Ethel = new(require('./ethel.js'))();
 
 var Ricky = require('./ricky.js');
 
-function Fred(vaultAddress, vaultName) {
+var vaultAddress = "";
+var vaultName = "";
+
+function Fred(_vaultAddress, _vaultName) {
 
     var self = this;
+    self.isVaultOpen = false;
+
+    return self.changeVault(_vaultAddress, _vaultName);
+}
+
+Fred.prototype.changeVault = function(_vaultAddress, _vaultName) {
+
+    var self = this;
+    self.isVaultOpen = false;
+    if (typeof _vaultAddress !== "string" || typeof _vaultName !== "string") {
+
+        return self;
+    }
+
+    vaultAddress = _vaultAddress;
+    vaultName = _vaultName;
 
     self.VAULT = vaultAddress + (typeof vaultName === "string" ? "/" + vaultName + "/" : "/Lucy's Vault/");
     self.TRACK_AUDIO = self.VAULT + "track_audio/";
     self.TRACK_INFO = self.VAULT + "track_info/";
     self.TRACK_VIDEO = self.VAULT + "track_video/";
-}
+    self.folders = [self.VAULT, self.TRACK_AUDIO, self.TRACK_INFO, self.TRACK_VIDEO];
+
+    self.openVault();
+    return self;
+};
+
+Fred.prototype.openVault = function() {
+
+    var self = this;
+
+    if (typeof self.folders !== "object" || self.folders.length < 1) {
+        
+        console.log("Cannot open Vault", vaultName, "@", self.VAULT);
+        console.log("Vault folders:");
+        console.log(self.folders);
+
+        self.isVaultOpen = false;
+        return self;
+    }
+
+    self.folders.forEach(function(dir, index) {
+        fs.ensureDirSync(dir);
+    });
+
+    self.isVaultOpen = true;
+
+    console.log("Opened Vault", vaultName, "@", self.VAULT);
+
+    return self;
+};
+
 Fred.prototype.checkVault = function(_tube_, _trackID_) {
 
     var self = this;
 
+    if (!self.isVaultOpen) {
+
+        return Q.Promise(new Error("Vault is not opened, try re openVault vault"));
+    }
+
     console.log("Checking", _trackID_, "in", self.VAULT);
 
-    return self.golden_retriever(_tube_, _trackID_);
+    return _golden_retriever(self, _tube_, _trackID_);
 };
 
 
-Fred.prototype.golden_retriever = function(_tube_, _trackID_) {
-
-    var self = this;
+var _golden_retriever = function(_self_, _tube_, _trackID_) {
 
     var deferred = Q.defer();
 
@@ -38,16 +91,19 @@ Fred.prototype.golden_retriever = function(_tube_, _trackID_) {
     spotify_daemon.getTrack(function(_error_, _track_) {
 
         if (_error_) return deferred.reject("The puppy got lost yo");
+
         var ret = {
             song: _track_,
             video: null,
             score: 0
         };
+
         (new Ricky(_tube_)).search_your_tube(_track_)
             .then(function success(value) {
 
                     ret.video = value.video;
                     ret.score = value.score;
+                    //this is where we get the images welp
                     // (Ethel.getSpotifyApi()).getTrack("0kWaHSRR5RK4nJk25AN8Yv")
                     //     .then(
                     //         function(val) {
@@ -56,7 +112,7 @@ Fred.prototype.golden_retriever = function(_tube_, _trackID_) {
                     //             console.log(reason);
                     //         }
                     // ).done();
-                    self.save_the_baby(ret);
+                    _self_.save_the_baby(ret);
 
                     deferred.resolve(ret);
 
@@ -72,6 +128,10 @@ Fred.prototype.golden_retriever = function(_tube_, _trackID_) {
 Fred.prototype.save_the_baby = function(_newborn_) {
 
     var self = this;
+    if (!self.isVaultOpen) {
+
+        return console.log("Vault is not opened, try re openVault vault");
+    }
 
     jsonfile.readFile(self.TRACK_INFO + _newborn_["song"]["id"], function(err, obj) {
 

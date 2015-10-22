@@ -1,4 +1,4 @@
-var fs = require('fs');
+var fs = require('fs-extra');
 var util = require('util');
 var jsonfile = require('jsonfile');
 var express = require('express');
@@ -35,7 +35,7 @@ var Lucy = (function() {
         volume: [],
         position: []
     };
-    
+
     var syncing = false;
 
     var alive = false;
@@ -43,7 +43,9 @@ var Lucy = (function() {
     var dirty = false;
 
     var soul = (function soul() {
+
         var spirit = null;
+        var spirit_mana = null;
 
         function summon(user) {
 
@@ -55,12 +57,40 @@ var Lucy = (function() {
                 if (err) {
                     deferred.reject(new Error(err));
                 } else {
-                    spirit = user;
-                    deferred.resolve(spirit);
-                }
 
+                    spirit = user;
+
+                    clearTimeout(spirit_mana);
+
+                    var back2back = (new Date(user.expires_at) - new Date());
+                    console.log("Spirit is flying away in", back2back / 1000, " seconds");
+
+                    spirit_mana = charged_up(back2back);
+
+                    deferred.resolve(spirit);
+
+                }
             });
             return deferred.promise;
+        }
+
+        function charged_up(energy) {
+
+            return setTimeout(function() {
+                //either convince soul to stay or let it go let it go
+                Ethel.entertainUser().then(
+
+                    function(_entertainedUser) {
+
+                        console.log(_entertainedUser);
+                        summon(_entertainedUser);
+                    },
+                    function(reason) {
+                        console.log(reason);
+                        lost();
+                    }).done();
+                return; //lost();
+            }, energy);
         }
 
         function heal() {
@@ -71,8 +101,12 @@ var Lucy = (function() {
         function lost() {
 
             spirit = null;
-            fs.unlink("./config/user.json",function(err, value){
-                if(!err) console.log("Soul is lost");
+            clearTimeout(spirit_mana);
+            fs.remove("./config/user.json", function(err) {
+
+                if (err) return console.error(err);
+                syncing = false; // to be removed
+                console.log("Soul is lost");
             });
             return spirit;
         }
@@ -108,7 +142,7 @@ var Lucy = (function() {
         var pulse;
 
         function beat() {
-            console.log("heart beating");
+            //console.log("heart beating");
             clearTimeout(pulse);
             if (!alive) return;
 
@@ -186,6 +220,9 @@ var Lucy = (function() {
         vault = jsonfile.readFileSync("./config/vaults.json").main_vault;
         vaultAdd = vault.location + "/" + vault.name;
         vaultKeeper = new Fred(vault.location, vault.name);
+
+        console.log(vaultKeeper);
+
         credentials = jsonfile.readFileSync("./config/credentials.json");
 
         yt_oauth = Youtube.authenticate({
@@ -193,14 +230,7 @@ var Lucy = (function() {
             key: credentials["yt_api_keys"]["lucy_alpha"]
         });
 
-        var folders = ["./vaults", vaultAdd, vaultAdd + "/track_info", vaultAdd + "/track_audio", vaultAdd + "/track_video"];
 
-        folders.forEach(function(dir, index) {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
-                console.log("Creating", dir);
-            }
-        });
         live();
         heart.beat();
         Ethel.getMe()
@@ -302,7 +332,7 @@ app.get('/authCallback', function(req, res) {
             res.redirect("/index");
         },
         function(err) {
-            Lucy.sleep();
+            //Lucy.sleep();
             res.redirect("/index");
         }).done();
 
@@ -314,7 +344,19 @@ app.get('*', function(req, res) {
 
     Ethel.getMe()
         .then(function(User) {
-            res.send("Hi "+User.info.display_name+", <br> <a href=logout>Logout</a> <br>" + JSON.stringify(User.info));
+
+            var ret = ["Hi " + User.info.display_name + ", you need to go @ " + User.expires_at];
+            ret.push("<br><a href=logout>Logout</a><br>");
+            ret.push("<pre>Access_Token:<br> " + User.access_token);
+            ret.push("<br>Refresh_Token:<br> " + User.refresh_token);
+            ret.push("<br>User_Info:<br> "+ JSON.stringify(User.info, null, 2)+"</pre>");
+            ret.push(
+                "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());"+
+                "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}')"+
+                "</script>"
+            );
+            
+            res.send(ret.join("<br>"));
 
         }, function(err) {
             res.send("Hi, I'm Lucy <br> <br> <a href=login>Login</a>");
