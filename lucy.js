@@ -15,6 +15,9 @@ var Ethel = new(require('./ethel.js'))();
 
 var Lucy = (function() {
 
+    var quotes = null;
+    var name = "Lucy";
+
     var vault = null;
     var vaultAdd = "";
     var vaultKeeper = null;
@@ -142,7 +145,7 @@ var Lucy = (function() {
         var pulse;
 
         function beat() {
-            //console.log("heart beating");
+            talk_or_listen();
             clearTimeout(pulse);
             if (!alive) return;
 
@@ -216,7 +219,7 @@ var Lucy = (function() {
             console.log("set ./config pls");
             throw new Error("set ./config pls");
         }
-
+        quotes = jsonfile.readFileSync("./config/quotes.json");
         vault = jsonfile.readFileSync("./config/vaults.json").main_vault;
         vaultAdd = vault.location + "/" + vault.name;
         vaultKeeper = new Fred(vault.location, vault.name);
@@ -240,6 +243,22 @@ var Lucy = (function() {
                 //console.log(err);
                 sleep();
             }).done();
+    }
+
+    function talk_or_listen(pls) {
+
+        if (typeof quotes !== 'object') return;
+
+        var isThereAnyOneSpeaking = Math.random() < 0.5;
+        if (pls || isThereAnyOneSpeaking) {
+
+            var people = Object.keys(quotes);
+            var whoSay = people[Math.floor(Math.random() * people.length)];
+            var whatQuotes = quotes[whoSay];
+
+            console.log(whoSay, ":", whatQuotes[Math.floor(Math.random() * whatQuotes.length)]);
+        }
+        return;
     }
 
     function live() {
@@ -295,7 +314,8 @@ var Lucy = (function() {
         sleep: sleep,
         wakeup: wakeup,
         areYouUp: areYouUp,
-        comeAlive: i_love_lucy
+        comeAlive: i_love_lucy,
+        talk_or_listen: talk_or_listen
     };
 })();
 
@@ -349,13 +369,13 @@ app.get('*', function(req, res) {
             ret.push("<br><a href=logout>Logout</a><br>");
             ret.push("<pre>Access_Token:<br> " + User.access_token);
             ret.push("<br>Refresh_Token:<br> " + User.refresh_token);
-            ret.push("<br>User_Info:<br> "+ JSON.stringify(User.info, null, 2)+"</pre>");
+            ret.push("<br>User_Info:<br> " + JSON.stringify(User.info, null, 2) + "</pre>");
             ret.push(
-                "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());"+
-                "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}')"+
+                "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
+                "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}')" +
                 "</script>"
             );
-            
+
             res.send(ret.join("<br>"));
 
         }, function(err) {

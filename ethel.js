@@ -67,16 +67,19 @@ Ethel.prototype.setAccessTokens = function(spotifyApi) {
     return deferred.promise;
 };
 
-var _setUser = function(spotifyApi, data) {
+ Ethel.prototype.setUser = function(user) {
 
     var deferred = Q.defer();
 
-    var expireDate = new Date();
-    expireDate.setSeconds(expireDate.getSeconds() + (parseInt(data.body['expires_in'], 10) - 72));
+    var self = this;
+    var spotifyApi = self.getSpotifyApi();
 
-    var access_token = data.body['access_token'] || spotifyApi.getAccessToken();
-    var refresh_token = data.body['refresh_token'] || spotifyApi.getRefreshToken();
-    var user = {
+    var expireDate = new Date();
+    expireDate.setSeconds(expireDate.getSeconds() + (parseInt(user['expires_in'], 10) - 72));
+
+    var access_token = user['access_token'] || spotifyApi.getAccessToken();
+    var refresh_token = user['refresh_token'] || spotifyApi.getRefreshToken();
+    var newUser = {
         expires_at: expireDate.toString(),
         access_token: access_token,
         refresh_token: refresh_token,
@@ -90,8 +93,8 @@ var _setUser = function(spotifyApi, data) {
     spotifyApi.getMe()
         .then(function(data) {
             // console.log('Some information about the authenticated user', data.body);
-            user.info = data.body;
-            deferred.resolve(user);
+            newUser.info = data.body;
+            deferred.resolve(newUser);
 
         }, function(err) {
             console.log('Something went wrong!', err);
@@ -117,7 +120,7 @@ Ethel.prototype.getUser = function(code) {
             // console.log('The token expires in ' + data.body['expires_in']);
             // console.log('The access token is ' + data.body['access_token']);
             // console.log('The refresh token is ' + data.body['refresh_token']);
-            deferred.resolve(_setUser(spotifyApi, data));
+            deferred.resolve(self.setUser(data.body));
 
         }, function(err) {
             console.log('Something went wrong!', err);
@@ -144,7 +147,7 @@ Ethel.prototype.entertainUser = function() {
                 function(data) {
 
                     data.body.refresh_token = spotifyApi.getRefreshToken();
-                    deferred.resolve(_setUser(spotifyApi, data));
+                    deferred.resolve(self.setUser(data.body));
                 },
                 function(err) {
                     deferred.reject(new Error(err));
