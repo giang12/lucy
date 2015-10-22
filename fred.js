@@ -1,17 +1,36 @@
 var spotify_daemon = require('./lib/spotify-node-applescript.js');
-var search_your_tube = require('./ricky.js').search_your_tube;
 var jsonfile = require('jsonfile');
 var Q = require('q');
-
 var ytdl = require('ytdl-core');
 var YoutubeMp3Downloader = require('youtube-mp3-downloader');
 
-var VAULT = "";
-var TRACK_AUDIO = "";
-var TRACK_INFO = "";
-var TRACK_VIDEO = "";
+var Ethel = new(require('./ethel.js'))();
 
-function golden_retriever(_tube_, _trackID_) {
+var Ricky = require('./ricky.js');
+
+function Fred(vaultAddress, vaultName) {
+
+    var self = this;
+
+    self.VAULT = vaultAddress + (typeof vaultName === "string" ? "/" + vaultName + "/" : "/Lucy's Vault/");
+    self.TRACK_AUDIO = self.VAULT + "track_audio/";
+    self.TRACK_INFO = self.VAULT + "track_info/";
+    self.TRACK_VIDEO = self.VAULT + "track_video/";
+}
+Fred.prototype.checkVault = function(_tube_, _trackID_) {
+
+    var self = this;
+
+    console.log("Checking", _trackID_, "in", self.VAULT);
+
+    return self.golden_retriever(_tube_, _trackID_);
+};
+
+
+Fred.prototype.golden_retriever = function(_tube_, _trackID_) {
+
+    var self = this;
+
     var deferred = Q.defer();
 
     console.log("Retrieving", _trackID_);
@@ -24,29 +43,37 @@ function golden_retriever(_tube_, _trackID_) {
             video: null,
             score: 0
         };
-        search_your_tube(_tube_, _track_)
+        (new Ricky(_tube_)).search_your_tube(_track_)
             .then(function success(value) {
 
-                ret.video = value.video;
-                ret.score = value.score;
+                    ret.video = value.video;
+                    ret.score = value.score;
+                    // (Ethel.getSpotifyApi()).getTrack("0kWaHSRR5RK4nJk25AN8Yv")
+                    //     .then(
+                    //         function(val) {
+                    //             console.log(val.body);
+                    //         }, function(reason) {
+                    //             console.log(reason);
+                    //         }
+                    // ).done();
+                    self.save_the_baby(ret);
 
-                save_the_baby(ret);
+                    deferred.resolve(ret);
 
-                deferred.resolve(ret);
-
-            }, function error(reason) {
-                deferred.reject(reason);
-            });
+                },
+                function error(reason) {
+                    deferred.reject(reason);
+                });
     });
 
     return deferred.promise;
-}
+};
 
-function save_the_baby(_newborn_) {
+Fred.prototype.save_the_baby = function(_newborn_) {
 
+    var self = this;
 
-
-    jsonfile.readFile(TRACK_INFO + _newborn_["song"]["id"], function(err, obj) {
+    jsonfile.readFile(self.TRACK_INFO + _newborn_["song"]["id"], function(err, obj) {
 
         if (err || _newborn_.score > obj.score) {
             console.log(_newborn_["video"]["urlShort"]);
@@ -61,7 +88,7 @@ function save_the_baby(_newborn_) {
             //Configure YoutubeMp3Downloader with your settings
             var YD = new YoutubeMp3Downloader({
                 "ffmpegPath": "./ffmpeg/ffmpeg", // Where is the FFmpeg binary located?
-                "outputPath": VAULT + "track_audio", // Where should the downloaded and encoded files be stored?
+                "outputPath": self.VAULT + "track_audio", // Where should the downloaded and encoded files be stored?
                 "youtubeVideoQuality": "highest", // What video quality should be used?
                 "queueParallelism": 2, // How many parallel downloads/encodes should be started?
                 "progressTimeout": 2000 // How long should be the interval of the progress reports
@@ -79,7 +106,7 @@ function save_the_baby(_newborn_) {
             // });
 
 
-            jsonfile.writeFile(TRACK_INFO + _newborn_["song"]["id"], _newborn_, {
+            jsonfile.writeFile(self.TRACK_INFO + _newborn_["song"]["id"], _newborn_, {
                 spaces: 2
             }, function(err) {
                 if (err) console.log(err);
@@ -93,19 +120,6 @@ function save_the_baby(_newborn_) {
         }
 
     });
-}
-
-function setVault(_vault_) {
-
-    VAULT = _vault_ + "/vault/";
-    TRACK_AUDIO = VAULT + "track_audio/";
-    TRACK_INFO = VAULT + "track_info/";
-    TRACK_VIDEO = VAULT + "track_video/";
-
-}
-exports.checkVault = function(_tube_, _trackID_, _vault_) {
-
-    setVault(_vault_);
-    console.log("Checking", _trackID_, "in", VAULT);
-    return golden_retriever(_tube_, _trackID_);
 };
+
+module.exports = Fred;

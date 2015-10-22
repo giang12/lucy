@@ -6,139 +6,270 @@ var spotify_daemon = require('./lib/spotify-node-applescript.js');
 var Youtube = require("youtube-api"),
     Logger = require("bug-killer"),
     Opn = require("opn");
+var Q = require('q');
 
 var Ricky = require('./ricky.js');
 var Fred = require('./fred.js');
-var Ethel = require('./ethel.js');
+var Ethel = new(require('./ethel.js'))();
 
 
+var Lucy = (function() {
 
+    var vault = null;
+    var vaultAdd = "";
+    var vaultKeeper = null;
+    var credentials = null;
+    var yt_oauth = null;
+    var state = {
+        track_id: null,
+        volume: null,
+        position: null,
+        state: null
+    };
+    var tracking = {
+        user_id: [],
+        track_id: [],
+        state: [],
+        volume: [],
+        position: []
+    };
+    var syncing = false;
 
-var VAULT = "";
+    var alive = false;
+    var awake = false;
+    var dirty = false;
 
-var CREDENTIALS = null;
+    var soul = (function soul() {
+        var spirit = null;
 
-var state = {
-    track_id: null,
-    volume: null,
-    position: null,
-    state: null
-};
+        function summon(user) {
 
-var yt_oauth = null;
+            var deferred = Q.defer();
 
+            jsonfile.writeFile("./config/user.json", user, {
+                spaces: 2
+            }, function(err) {
+                if (err) {
+                    deferred.reject(new Error(err));
+                } else {
+                    spirit = user;
+                    deferred.resolve(spirit);
+                }
 
-var tracking = {
-    track_id: [],
-    state: [],
-    volume: [],
-    position: []
-};
-
-
-/*
-Check Config folder
-Init vault folder
-Set Credentials
-Youtube authenticate
- */
-(function i_love_lucy() {
-
-    if (!fs.existsSync("./config")) {
-
-        console.log("set ./config pls");
-        throw new Error("set ./config pls");
-    }
-
-    VAULT = jsonfile.readFileSync("./config/paths.json").vault_location;
-
-    CREDENTIALS = jsonfile.readFileSync("./config/credentials.json");
-
-    yt_oauth = Youtube.authenticate({
-        type: "key",
-        key: CREDENTIALS["yt_api_keys"]["lucy_alpha"]
-    });
-
-    var folders = [VAULT + "/vault", VAULT + "/vault/track_info", VAULT + "/vault/track_audio", VAULT + "/vault/track_video"];
-
-    folders.forEach(function(dir, index) {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
-            console.log("Creating", dir);
+            });
+            return deferred.promise;
         }
-    });
 
-})();
+        function heal() {
 
-/** Bind Lucy */
-//if current playing song changed
-tracking['track_id'].push(
-    //check vault, add/update best matched songs to vault
-    function(track_id) {
-        return Fred.checkVault(Youtube, track_id, VAULT).done();
-    }
-);
+            return spirit;
+        }
 
-/** And Lucy's Heart Starts Beating : Come  alive*/
-var syncing = false;
+        function lost() {
 
-function sync(user, playlists) {
+            spirit = null;
+            fs.unlink("./config/user.json",function(err, value){
+                if(!err) console.log("Soul is lost");
+            });
+            return spirit;
+        }
 
-    var total_playlist = playlists.length;
-    var failure = [];
-    var success = 0;
-    console.log("playlists.length:", total_playlist);
+        return {
+            summon: summon,
+            heal: heal,
+            lost: lost
+        };
+    })();
 
-    playlists.forEach(function(elm, key) {
-        console.log((key+1)+"("+total_playlist+"):", elm.name);
-    });
+    var memory = (function memory() {
+        /** Bind Lucy */
+        //if current playing song changed
+        tracking['track_id'].push(
+            //check vault, add/update best matched songs to vault
+            function(track_id) {
+                return vaultKeeper.checkVault(Youtube, track_id).done();
+            }
+        );
 
-    //next step spawn child to sycn playlist songs
+        function setMemory() {
+            //
+        }
 
-}
+        return {
 
-(function heartbeat() {
-    var pulse;
-    clearTimeout(pulse);
-    pulse = setTimeout(function() {
+            setMemory: setMemory
+        };
+    })();
 
-        var dirty = false;
+    var heart = (function heart() {
+        var pulse;
 
-        Ethel.getMe(function(err, me) {
-            if (!err && !syncing) {
-                syncing = true;
-                Ethel.getPlaylists(me.id, function(err, data) {
-                    if (err) {
-                        syncing = false;
-                        return;
-                    }
-                    sync(me, data);
+        function beat() {
+            console.log("heart beating");
+            clearTimeout(pulse);
+            if (!alive) return;
+
+            pulse = setTimeout(function() {
+                dirty = false;
+                var my = soul.heal();
+                if (awake && !syncing && my !== null && typeof my !== 'undefined') {
+                    my = my.info;
+                    syncing = true;
+                    console.log("Hi There", my.display_name);
+
+                    Ethel.getPlaylists(my.id).then(
+                        function(playlists) {
+
+                            sync(my, playlists);
+                        },
+                        function(err) {
+                            console.log(err);
+                            syncing = false;
+                        });
+                }
+
+                spotify_daemon.getState(function(_error_, _state_) {
+
+                    if (_error_) return beat();
+                    Object.keys(tracking).forEach(function(key) {
+
+                        if (_state_[key] != state[key] && tracking[key].length !== 0) {
+
+                            dirty = true;
+                            console.log(key, ":", state[key], "->", _state_[key]);
+
+                            tracking[key].forEach(function(callback, index) {
+                                if (typeof callback === 'function')
+                                    callback(_state_[key]);
+                            });
+                        }
+                    });
+                    //if (!dirty) console.log("3>heartbeat<3");
+                    state = _state_;
+                    return beat();
                 });
+            }, 2000);
+        }
+
+        function stop() {
+            clearTimeout(pulse);
+            console.log("stop it");
+        }
+
+        return {
+            beat: beat,
+            stop: stop
+        };
+    })();
+    /*
+    Check Config folder
+    Init vault folder
+    Set Credentials
+    Youtube authenticate
+    come live
+    heart beat
+    set awake if awake
+     */
+    function i_love_lucy() { //aka lucy init
+
+        if (alive) return;
+
+        if (!fs.existsSync("./config")) {
+
+            console.log("set ./config pls");
+            throw new Error("set ./config pls");
+        }
+
+        vault = jsonfile.readFileSync("./config/vaults.json").main_vault;
+        vaultAdd = vault.location + "/" + vault.name;
+        vaultKeeper = new Fred(vault.location, vault.name);
+        credentials = jsonfile.readFileSync("./config/credentials.json");
+
+        yt_oauth = Youtube.authenticate({
+            type: "key",
+            key: credentials["yt_api_keys"]["lucy_alpha"]
+        });
+
+        var folders = ["./vaults", vaultAdd, vaultAdd + "/track_info", vaultAdd + "/track_audio", vaultAdd + "/track_video"];
+
+        folders.forEach(function(dir, index) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+                console.log("Creating", dir);
             }
         });
+        live();
+        heart.beat();
+        Ethel.getMe()
+            .then(function(User) {
+                wakeup(User);
+            }, function(err) {
+                //console.log(err);
+                sleep();
+            }).done();
+    }
 
-        spotify_daemon.getState(function(_error_, _state_) {
+    function live() {
 
-            if (_error_) return heartbeat();
-            Object.keys(tracking).forEach(function(key) {
+        alive = true;
+    }
 
-                if (_state_[key] != state[key] && tracking[key].length !== 0) {
+    function die() {
 
-                    dirty = true;
-                    console.log(key, ":", state[key], "->", _state_[key]);
+        alive = false;
+        sleep();
+        heart.stop();
+    }
 
-                    tracking[key].forEach(function(callback, index) {
-                        if (typeof callback === 'function')
-                            callback(_state_[key]);
-                    });
-                }
-            });
-            //if (!dirty) console.log("3>heartbeat<3");
-            state = _state_;
-            return heartbeat();
-        });
-    }, 2000);
+    function sleep() {
+
+        soul.lost();
+        awake = false;
+    }
+
+    function wakeup(User) {
+
+        soul.summon(User);
+        awake = true;
+    }
+
+    function areYouUp() {
+
+        return awake;
+    }
+
+    function areYouGud() {
+
+        return alive;
+    }
+
+    function sync(user, playlists) {
+
+        var total_playlist = playlists.length;
+        var failure = [];
+        var success = 0;
+        console.log("playlists.length:", total_playlist);
+
+        // playlists.forEach(function(elm, key) {
+        //     console.log((key + 1) + "(" + total_playlist + "):", elm.name);
+        // });
+
+        //next step spawn child to sycn playlist songs
+
+    }
+
+    return {
+        sleep: sleep,
+        wakeup: wakeup,
+        areYouUp: areYouUp,
+        comeAlive: i_love_lucy
+    };
 })();
+
+
+/** And Lucy's Heart Starts Beating : Come  alive*/
+Lucy.comeAlive();
+
 
 var app = express();
 var port = process.env.PORT || 8888;
@@ -147,12 +278,46 @@ var port = process.env.PORT || 8888;
  * Routes
  */
 /** Authentication / Token */
-app.get('/login', Ethel.login);
-app.get('/authCallback', Ethel.get_token);
-app.get('/refresh_token', Ethel.refresh_token);
+app.get('/login', function(req, res) {
 
-// redirect all others to the index (HTML5 history)
-app.get('*', Ethel.index);
+    var authorizeURL = Ethel.getSpotifyApi().createAuthorizeURL(Ethel.scopes);
+    // your application requests authorization
+    res.redirect(authorizeURL);
+});
+app.get('/logout', function(req, res) {
+
+    Lucy.sleep();
+    res.redirect("/index");
+});
+app.get('/authCallback', function(req, res) {
+    var code = req.query.code || null;
+
+    Ethel.getUser(code).then(
+        function(user) {
+            //console.log(user);
+            Lucy.wakeup(user);
+            res.redirect("/index");
+        },
+        function(err) {
+            Lucy.sleep();
+            res.redirect("/index");
+        }).done();
+
+});
+// app.get('/refresh_token', Ethel.refresh_token);
+
+// // redirect all others to the index (HTML5 history)
+app.get('*', function(req, res) {
+
+    Ethel.getMe()
+        .then(function(User) {
+            res.send("Hi "+User.info.display_name+", <br> <a href=logout>Logout</a> <br>" + JSON.stringify(User.info));
+
+        }, function(err) {
+            res.send("Hi, I'm Lucy <br> <br> <a href=login>Login</a>");
+
+        }).done();
+});
 
 app.listen(port);
 console.log('Express app started on port ' + port);

@@ -264,26 +264,23 @@ function _tubeHandler(_tube_, _track_, res) {
 
 }
 
-// Search Youtube -- callback is called on each found item
-/**
- * [search_your_tube description]
- * @param  {[type]}   _tube_   [description]
- * @param  {[type]}   _track_  [description]
- * @return      {
-                    "song": _track_,
-                    "video": suppaWilly,
-                    "score": suppaWillyScore
-                }
- */
-exports.search_your_tube = function(_tube_, _track_) {
 
+var Ricky = function(tube){
+
+    var self = this;
+    self.tube = tube;
+};
+
+Ricky.prototype.search_your_tube = function(_track_){
+
+    var self = this;
     var deferred = Q.defer();
 
     var query = _track_["name"] + " + " + _track_["artist"] + (_track_["album_artist"] == _track_["artist"] ? "" : " + " + _track_["album_artist"]);
     console.log(_track_);
     var order = (Math.random() < 0.5 ? 'relevance' : 'viewCount'); //rating
     console.log("Searching query(orderBY ", order, "):", query);
-    _tube_.search.list({
+    self.tube.search.list({
             part: 'snippet',
             type: 'video',
             q: query,
@@ -296,11 +293,15 @@ exports.search_your_tube = function(_tube_, _track_) {
             if (err) {
                 deferred.reject(new Error(err));
             } else {
-                deferred.resolve(_tubeHandler(_tube_, _track_, res));
+                deferred.resolve(_tubeHandler(self.tube, _track_, res));
             }
         }
     );
 
     return deferred.promise;
-
 };
+
+module.exports = Ricky;
+
+
+

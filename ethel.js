@@ -9,157 +9,91 @@ var SpotifyWebApi = require('spotify-web-api-node');
 var jsonfile = require('jsonfile');
 var Q = require('q');
 
-var scopes = require("./config/credentials.json").spotify_scopes;
 
-var credentials = require("./config/credentials.json").spotifyWebApi;
+function Ethel() {
 
-var spotifyApi = new SpotifyWebApi(credentials);
+    var self = this;
 
+    self.credentials = require("./config/credentials.json").spotifyWebApi;
+    self.scopes = require("./config/credentials.json").spotify_scopes;
+}
 
-jsonfile.readFile("./config/user.json", function(err, obj) {
+Ethel.prototype.getMe = function() {
 
-    if (!err) {
-        spotifyApi.setAccessToken(obj['access_token']);
-        spotifyApi.setRefreshToken(obj['refresh_token']);
-    }
-});
+    var deferred = Q.defer();
+    var self = this;
 
+    jsonfile.readFile("./config/user.json", function(err, obj) {
 
-exports.getPlaylists = function(id, callback) {
-    var result = [];
-    var total = 0;
-    var offset = 0;
-    var limit = 0;
+        if (err) {
+            deferred.reject(err);
+        } else {
 
-    var promises = [];
-
-    spotifyApi.getUserPlaylists(id)
-        .then(function(data) {
-
-            total = data.body.total;
-            limit = data.body.items.length;
-            offset = data.body.items.length;
-            result = result.concat(data.body.items);
-
-            while (offset < total) {
-
-                promises.push(_helper(offset, limit));
-                offset += limit;
-            }
-            Q.all(promises).then(function(data) {
-                    for (var x = 0; x < data.length; x++) {
-                        result = result.concat(data[x].body.items);
-                    }
-                    callback(null, result);
-                },
-                function(err) {
-                    callback(err);
-
-                });
-        }, function(err) {
-            callback(err);
-        });
-
-    function _helper(offset, limit) {
-
-        return spotifyApi.getUserPlaylists(id, {
-            offset: offset,
-            limit: limit
-        });
-    }
-
+            deferred.resolve(obj);
+        }
+    });
+    return deferred.promise;
 };
-exports.getPlaylistTracks = function(id, playlistID, callback) {
-    var result = [];
-    var total = 0;
-    var offset = 0;
-    var limit = 0;
 
-    var promises = [];
+Ethel.prototype.getSpotifyApi = function() {
 
-    spotifyApi.getPlaylistTracks(id, playlistID)
-        .then(function(data) {
+    var self = this;
 
-            total = data.body.total;
-            limit = data.body.items.length;
-            offset = data.body.items.length;
-            result = result.concat(data.body.items);
+    return new SpotifyWebApi(self.credentials);
+};
 
-            while (offset < total) {
+Ethel.prototype.getSpotifyApi_WTokens = function() {
 
-                promises.push(_helper(offset, limit));
-                offset += limit;
-            }
-            Q.all(promises).then(function(data) {
-                    for (var x = 0; x < data.length; x++) {
-                        result = result.concat(data[x].body.items);
-                    }
-                    callback(null, result);
-                },
-                function(err) {
-                    callback(err);
+    var self = this;
 
-                });
-        }, function(err) {
-            callback(err);
-        });
+    return self.setAccessTokens(self.getSpotifyApi());
+};
 
-    function _helper(offset, limit) {
+Ethel.prototype.setAccessTokens = function(spotifyApi) {
 
-        return spotifyApi.getPlaylistTracks(id, playlistID,{
-            offset: offset,
-            limit: limit
-        });
+    var deferred = Q.defer();
+
+    jsonfile.readFile("./config/user.json", function(err, obj) {
+
+        if (err) {
+            deferred.reject(err);
+        } else {
+            
+            spotifyApi.setAccessToken(obj['access_token']);
+            spotifyApi.setRefreshToken(obj['refresh_token']);
+            deferred.resolve(spotifyApi);
+        }
+    });
+    return deferred.promise;
+};
+
+Ethel.prototype.getUser = function(code) {
+
+    var deferred = Q.defer();
+
+    if (typeof code !== 'string') {
+        return Q.Promise((new Error("No Code, Can't getUser")));
     }
 
-};
-
-exports.getMe = function(callback) {
-    spotifyApi.getMe()
-        .then(function(data) {
-            callback(null, data.body);
-        }, function(err) {
-            callback(err);
-        });
-};
-
-exports.index = function(req, res) {
-    spotifyApi.getMe()
-        .then(function(data) {
-            res.send("Hi, I'm Lucy <br> <br>" + JSON.stringify(data.body));
-
-        }, function(err) {
-            res.send("Hi, I'm Lucy <br> <br> <a href=login>Login</a>");
-
-        });
-};
-
-exports.login = function(req, res) {
-
-    var authorizeURL = spotifyApi.createAuthorizeURL(scopes);
-    // your application requests authorization
-    res.redirect(authorizeURL);
-};
-
-exports.get_token = function(req, res) {
-
-    // your application requests refresh and access tokens
-    // after checking the state parameter
-
-    var code = req.query.code || null;
-
+    var self = this;
+    var spotifyApi = self.getSpotifyApi();
     // Retrieve an access token and a refresh token
     spotifyApi.authorizationCodeGrant(code)
         .then(function(data) {
-            console.log('The token expires in ' + data.body['expires_in']);
-            console.log('The access token is ' + data.body['access_token']);
-            console.log('The refresh token is ' + data.body['refresh_token']);
+
+            // console.log('The token expires in ' + data.body['expires_in']);
+            // console.log('The access token is ' + data.body['access_token']);
+            // console.log('The refresh token is ' + data.body['refresh_token']);
 
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
+
+            var expireDate = new Date();
+            expireDate.setSeconds(expireDate.getSeconds() + (parseInt(data.body['expires_in'], 10) - 300));
+
             var user = {
-                expire: data.body['expires_in'],
+                expire: expireDate.toString(),
                 access_token: data.body['access_token'],
                 refresh_token: data.body['refresh_token'],
                 info: null,
@@ -167,46 +101,164 @@ exports.get_token = function(req, res) {
             // Get the authenticated user
             spotifyApi.getMe()
                 .then(function(data) {
-                    console.log('Some information about the authenticated user', data.body);
+                    // console.log('Some information about the authenticated user', data.body);
                     user.info = data.body;
-                    jsonfile.writeFile("./config/user.json", user, {
-                        spaces: 2
-                    }, function(err) {
-                        if (err) console.log(err);
-                        res.redirect("/index");
-                    });
+                    deferred.resolve(user);
+
                 }, function(err) {
                     console.log('Something went wrong!', err);
-                    res.redirect("/index");
+                    deferred.reject(new Error(err));
                 });
 
         }, function(err) {
             console.log('Something went wrong!', err);
-            res.redirect("/index");
+            deferred.reject(new Error(err));
         });
+
+    return deferred.promise;
+
 };
 
-exports.refresh_token = function(req, res) {
-    // requesting access token from refresh token
-    var refresh_token = req.query.refresh_token;
-    var authOptions = {
-        url: 'https://accounts.spotify.com/api/token',
-        headers: {
-            'Authorization': 'Basic ' + (new Buffer(spotifyConfig.client_id + ':' + spotifyConfig.client_secret).toString('base64'))
-        },
-        form: {
-            grant_type: 'refresh_token',
-            refresh_token: refresh_token
-        },
-        json: true
-    };
 
-    request.post(authOptions, function(error, response, body) {
-        if (!error && response.statusCode === 200) {
-            var access_token = body.access_token;
-            res.send({
-                'access_token': access_token
-            });
-        }
-    });
+
+var _getPlaylists = function(spotifyApi, userID) {
+
+    if (!spotifyApi.getAccessToken()) {
+        Q.Promise(new Error("Requires spotifyApi with Access Token"));
+    }
+
+    var deferred = Q.defer();
+
+    var result = [];
+    var total = 0;
+    var offset = 0;
+    var limit = 0;
+
+    var promises = [];
+
+    spotifyApi.getUserPlaylists(userID)
+        .then(function(data) {
+
+            total = data.body.total;
+            limit = data.body.items.length;
+            offset = data.body.items.length;
+            result = result.concat(data.body.items);
+
+            while (offset < total) {
+
+                promises.push(spotifyApi.getUserPlaylists(userID, {
+                    offset: offset,
+                    limit: limit
+                }));
+                offset += limit;
+            }
+
+            Q.all(promises).then(function(data) {
+                    for (var x = 0; x < data.length; x++) {
+                        result = result.concat(data[x].body.items);
+                    }
+                    deferred.resolve(result);
+                },
+                function(err) {
+                    deferred.reject(err);
+
+                });
+        }, function(err) {
+            deferred.reject(err);
+        });
+
+    return deferred.promise;
 };
+
+Ethel.prototype.getPlaylists = function(userID) {
+    console.log("getting playlists for", userID);
+    var deferred = Q.defer();
+    var self = this;
+
+    self.getSpotifyApi_WTokens()
+        .then(function(spotifyApiWithTokens) {
+
+            deferred.resolve(_getPlaylists(spotifyApiWithTokens, userID));
+        }, function(reason) {
+
+            deferred.reject(reason);
+        });
+
+    return deferred.promise;
+};
+
+module.exports = Ethel;
+
+
+// exports.getPlaylistTracks = function(id, playlistID, callback) {
+//     var result = [];
+//     var total = 0;
+//     var offset = 0;
+//     var limit = 0;
+
+//     var promises = [];
+
+//     spotifyApi.getPlaylistTracks(id, playlistID)
+//         .then(function(data) {
+
+//             total = data.body.total;
+//             limit = data.body.items.length;
+//             offset = data.body.items.length;
+//             result = result.concat(data.body.items);
+
+//             while (offset < total) {
+
+//                 promises.push(_helper(offset, limit));
+//                 offset += limit;
+//             }
+//             Q.all(promises).then(function(data) {
+//                     for (var x = 0; x < data.length; x++) {
+//                         result = result.concat(data[x].body.items);
+//                     }
+//                     callback(null, result);
+//                 },
+//                 function(err) {
+//                     callback(err);
+
+//                 });
+//         }, function(err) {
+//             callback(err);
+//         });
+
+//     function _helper(offset, limit) {
+
+//         return spotifyApi.getPlaylistTracks(id, playlistID, {
+//             offset: offset,
+//             limit: limit
+//         });
+//     }
+
+// };
+
+
+
+
+// exports.refresh_token = function(req, res) {
+//     // requesting access token from refresh token
+//     var refresh_token = req.query.refresh_token;
+//     var authOptions = {
+//         url: 'https://accounts.spotify.com/api/token',
+//         headers: {
+//             'Authorization': 'Basic ' + (new Buffer(spotifyConfig.client_id + ':' + spotifyConfig.client_secret).toString('base64'))
+//         },
+//         form: {
+//             grant_type: 'refresh_token',
+//             refresh_token: refresh_token
+//         },
+//         json: true
+//     };
+
+//     request.post(authOptions, function(error, response, body) {
+//         if (!error && response.statusCode === 200) {
+//             var access_token = body.access_token;
+//             res.send({
+//                 'access_token': access_token
+//             });
+//         }
+//     });
+// };
