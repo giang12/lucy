@@ -18,8 +18,10 @@ var Lucy = (function() {
     var vault = null;
     var vaultAdd = "";
     var vaultKeeper = null;
+
     var credentials = null;
     var yt_oauth = null;
+
     var state = {
         track_id: null,
         volume: null,
@@ -33,6 +35,7 @@ var Lucy = (function() {
         volume: [],
         position: []
     };
+    
     var syncing = false;
 
     var alive = false;

@@ -1,0 +1,6 @@
+{
+    "main_vault": {
+        "location": "./vaults",
+        "name": "Lucy's Vault"
+    }
+}
