@@ -26,7 +26,7 @@ Ethel.prototype.getMe = function() {
     jsonfile.readFile("./config/user.json", function(err, obj) {
 
         if (err) {
-            deferred.reject(err);
+            deferred.reject(new Error(err));
         } else {
 
             deferred.resolve(obj);
@@ -56,7 +56,7 @@ Ethel.prototype.setAccessTokens = function(spotifyApi) {
     jsonfile.readFile("./config/user.json", function(err, obj) {
 
         if (err) {
-            deferred.reject(err);
+            deferred.reject(new Error(err));
         } else {
 
             spotifyApi.setAccessToken(obj['access_token']);
@@ -75,7 +75,7 @@ Ethel.prototype.setAccessTokens = function(spotifyApi) {
     var spotifyApi = self.getSpotifyApi();
 
     var expireDate = new Date();
-    expireDate.setSeconds(expireDate.getSeconds() + (parseInt(user['expires_in'], 10) - 72));
+    expireDate.setSeconds(expireDate.getSeconds() + (parseInt(user['expires_in'], 10) - 720));
 
     var access_token = user['access_token'] || spotifyApi.getAccessToken();
     var refresh_token = user['refresh_token'] || spotifyApi.getRefreshToken();
@@ -109,7 +109,7 @@ Ethel.prototype.getUser = function(code) {
     var deferred = Q.defer();
 
     if (typeof code !== 'string') {
-        return Q.Promise((new Error("No Code, Can't getUser")));
+        return Q.reject(new Error("No Code, Can't getUser"));
     }
 
     var self = this;
@@ -166,7 +166,8 @@ Ethel.prototype.entertainUser = function() {
 var _getPlaylists = function(spotifyApi, userID) {
 
     if (!spotifyApi.getAccessToken()) {
-        Q.Promise(new Error("Requires spotifyApi with Access Token"));
+
+        return Q.reject(new Error("Requires spotifyApi with Access Token"));
     }
 
     var deferred = Q.defer();
@@ -202,11 +203,11 @@ var _getPlaylists = function(spotifyApi, userID) {
                     deferred.resolve(result);
                 },
                 function(err) {
-                    deferred.reject(err);
+                    deferred.reject(new Error(err));
 
                 });
         }, function(err) {
-            deferred.reject(err);
+            deferred.reject(new Error(err));
         });
 
     return deferred.promise;
@@ -223,7 +224,7 @@ Ethel.prototype.getPlaylists = function(userID) {
             deferred.resolve(_getPlaylists(spotifyApiWithTokens, userID));
         }, function(reason) {
 
-            deferred.reject(reason);
+            deferred.reject(new Error(reason));
         });
 
     return deferred.promise;

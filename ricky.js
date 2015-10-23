@@ -127,8 +127,9 @@ function _tubeHandler(_tube_, _track_, res) {
     var spermsTotal = res.items.length;
 
     if (spermsTotal < 1) {
+
         console.log("hopeless pursue in the wilderness");
-        deferred.reject("Empty Search");
+        return Q.reject(new Error("No Code, Can't getUser"));
     }
     console.log("spermsCount:", spermsTotal);
 
@@ -230,7 +231,7 @@ function _tubeHandler(_tube_, _track_, res) {
             },
             function(err, data) {
                 if (err) {
-                    each_data_deferred.reject(err);
+                    each_data_deferred.reject(new Error(err));
                 } else {
                     each_data_deferred.resolve(_fuckfakerism(video, pos, data));
                 }
@@ -243,21 +244,17 @@ function _tubeHandler(_tube_, _track_, res) {
 
     Q.allSettled(collector)
         .then(function(results) {
-            deferred.resolve({
-                "video": suppaWilly,
-                "score": suppaWillyScore
-            });
-            // results.forEach(function(result) {
-            //     if (result.state === "fulfilled") {
-            //         var value = result.value;
-            //         console.log(value);
-            //     } else {
-            //         var reason = result.reason;
-            //         console.log(reason);
+            //results is the list of results search with score attach
+            //the winner should be set already or video is still null
+            if (suppaWilly === null) {
 
-            //     }
-            // });
-
+                deferred.reject(new Error("Found " + results.length + " but no suitable match T_T"));
+            } else {
+                deferred.resolve({
+                    "video": suppaWilly,
+                    "score": suppaWillyScore
+                });
+            }
         });
 
     return deferred.promise;
@@ -265,13 +262,13 @@ function _tubeHandler(_tube_, _track_, res) {
 }
 
 
-var Ricky = function(tube){
+var Ricky = function(tube) {
 
     var self = this;
     self.tube = tube;
 };
 
-Ricky.prototype.search_your_tube = function(_track_){
+Ricky.prototype.search_your_tube = function(_track_) {
 
     var self = this;
     var deferred = Q.defer();
@@ -302,6 +299,3 @@ Ricky.prototype.search_your_tube = function(_track_){
 };
 
 module.exports = Ricky;
-
-
-

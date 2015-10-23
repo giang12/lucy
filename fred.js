@@ -73,7 +73,7 @@ Fred.prototype.checkVault = function(_tube_, _trackID_) {
 
     if (!self.isVaultOpen) {
 
-        return Q.Promise(new Error("Vault is not opened, try re openVault vault"));
+        return Q.reject(new Error("Vault is not opened, try re openVault vault"));
     }
 
     console.log("Checking", _trackID_, "in", self.VAULT);
@@ -90,7 +90,7 @@ var _golden_retriever = function(_self_, _tube_, _trackID_) {
 
     spotify_daemon.getTrack(function(_error_, _track_) {
 
-        if (_error_) return deferred.reject("The puppy got lost yo");
+        if (_error_) return deferred.reject(new Error("The puppy got lost yo"));
 
         var ret = {
             song: _track_,
@@ -100,7 +100,7 @@ var _golden_retriever = function(_self_, _tube_, _trackID_) {
 
         (new Ricky(_tube_)).search_your_tube(_track_)
             .then(function success(value) {
-
+                    console.log(value);
                     ret.video = value.video;
                     ret.score = value.score;
                     //this is where we get the images welp
@@ -118,7 +118,7 @@ var _golden_retriever = function(_self_, _tube_, _trackID_) {
 
                 },
                 function error(reason) {
-                    deferred.reject(reason);
+                    deferred.reject(new Error(reason));
                 });
     });
 

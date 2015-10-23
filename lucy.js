@@ -127,7 +127,11 @@ var Lucy = (function() {
         tracking['track_id'].push(
             //check vault, add/update best matched songs to vault
             function(track_id) {
-                return vaultKeeper.checkVault(Youtube, track_id).done();
+                return vaultKeeper.checkVault(Youtube, track_id).then(function(newSong){
+                    console.log(newSong);
+                },function(err){
+                    console.log(err);
+                }).done();
             }
         );
 
