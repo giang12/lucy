@@ -149,7 +149,7 @@ var Lucy = (function() {
         var pulse;
 
         function beat() {
-            talk_or_listen();
+            //talk_or_listen();
             clearTimeout(pulse);
             if (!alive) return;
 

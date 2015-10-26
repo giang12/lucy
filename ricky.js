@@ -6,59 +6,41 @@ var Q = require('q');
 function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
 
     var score = 0;
+    var percent = 0;
+    var total = 26;// 11 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
 
-    if (nameInTitle) {
-        score += 1;
+    score += nameInTitle ? 1 : -1;
+    score += artistInTitle ? 1 : -1;
 
-    } else {
-        score += -1;
-    }
+    score += isAudio ? -1 : 0;
+    score += isLyric ? -1 : 0;
+    score += isCredit ? -1 : 0;
+    score += isLive ? -1 : 0;
+    score += isCover ? -1 : 0;
 
-    if (artistInTitle) {
-        score += 1;
+    score += isOfficial ? 1 : 0;
+    score += isMusic ? 1 : 0;
+    score += isVideo ? 1 : 0;
+    score += isExplicit ? 1 : 0;
 
-    } else {
-        score += -1;
-    }
-
-    if (isAudio) {
-        score += -1;
-    }
-    if (isLyric) {
-        score += -1;
-    }
-    if (isCredit) {
-        score += -1;
-    }
-    if (isLive) {
-        score += -1;
-    }
-    if (isCover) {
-        score += -1;
-    }
-
-
-    if (isOfficial) {
-        score += 1;
-    }
-    if (isMusic) {
-        score += 1;
-    }
-    if (isVideo) {
-        score += 1;
-    }
-    if (isExplicit) {
-        score += 1;
-    }
 
     score += simiScore;
-    score += nameInTitleScore;
 
+    score += nameInTitleScore;
     score += channelScore;
     score += statsScore;
+
     score *= invertedOrderScore;
 
-    return score;
+    percent = Math.round((score / total) * 1000)/1000;
+    total = Math.round(total * 1000)/1000;
+    score = Math.round(score * 1000)/1000;
+
+    return {
+        maxScore: total,
+        score: score,
+        percent: percent
+    };
 }
 
 function _calculateStatScore(statsObj) {
@@ -69,7 +51,7 @@ function _calculateStatScore(statsObj) {
         dislikeCount: 0,
         favoriteCount: 0,
         commentCount: 0,
-        score: 0
+        score: 0 //Max 8
     };
 
     if (typeof statsObj === 'undefined') {
@@ -93,17 +75,17 @@ function _calculateStatScore(statsObj) {
 
     if (ret.viewCount > 0) {
 
-        ret.score += ret.viewCount > viewCountThres ? 3 : (1 / viewCountThres) * ret.viewCount * 3;
+        ret.score += ret.viewCount > viewCountThres ? 3 : (1 / viewCountThres) * ret.viewCount * 3; //Max 3
     }
 
     if (ret.likeCount > 0) {
 
-        ret.score += ret.likeCount > likeCountThres ? 3 : (1 / likeCountThres) * ret.likeCount * 3;
+        ret.score += ret.likeCount > likeCountThres ? 3 : (1 / likeCountThres) * ret.likeCount * 3; //Max 3
     }
 
-    ret.score += ret.favoriteCount > favoriteThres ? 1 : (1 / favoriteThres) * ret.favoriteCount;
+    ret.score += ret.favoriteCount > favoriteThres ? 1 : (1 / favoriteThres) * ret.favoriteCount; //Max 1
 
-    ret.score += ret.commentCount > commentThres ? 1 : (1 / commentThres) * ret.commentCount;
+    ret.score += ret.commentCount > commentThres ? 1 : (1 / commentThres) * ret.commentCount; //Max 1
 
     return ret;
 }
@@ -116,20 +98,28 @@ function _standardizeString(str) {
 }
 
 
-function _tubeHandler(_tube_, _track_, res) {
+function _tubeHandler(_ricky_, _track_, res) {
 
+    if(typeof _ricky_.tube !== 'function'){
+
+        return Q.reject(new Error("Invalid Tube"));
+    }
     var deferred = Q.defer();
 
     //the sperms showndown
     var suppaWilly = null;
-    var suppaWillyScore = -999999999; //bigger better
+    var suppaWillyScore = {
+        maxScore: 26,
+        score: -999999999,//bigger better
+        percent: 0,
+    };
 
     var spermsTotal = res.items.length;
 
     if (spermsTotal < 1) {
 
         console.log("hopeless pursue in the wilderness");
-        return Q.reject(new Error("No Code, Can't getUser"));
+        return Q.reject(new Error("hopeless pursue in the wilderness"));
     }
     console.log("spermsCount:", spermsTotal);
 
@@ -138,21 +128,20 @@ function _tubeHandler(_tube_, _track_, res) {
 
 
         if (data.items.length < 1) {
+            
             return new Error("Baby Doesnt Have Info Such as BirthDate(creation date)");
         }
 
         data.items[0].contentDetails.duration.replace(/PT(\d+)M(\d+)S/, function(t, m, s) {
             video.duration = ((parseInt(m, 10) * 60) + parseInt(s, 10)) * 1000; //unit in ms
         });
-
         video.definition = data.items[0].contentDetails.definition;
+
         var timeDiff = Math.abs(video['duration'] - _track_['duration']);
-
         var vidTitle = _standardizeString(video["title"]);
-
+        //laven score for vid title
         var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["name"] + " official music video"), vidTitle);
 
-        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["name"]), 1) * 3;
 
         var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["name"])) > -1;
         var artistInTitle = vidTitle.indexOf(_standardizeString(_track_["artist"])) > -1;
@@ -169,16 +158,19 @@ function _tubeHandler(_tube_, _track_, res) {
         var isVideo = vidTitle.indexOf("video") > -1;
         var isExplicit = vidTitle.indexOf("explicit") > -1;
 
-        var simiScore = (1 - (lavenD / 100));
-        var channelScore = 0;
+        //11 boo-> max 11
+        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["name"]), 1) * 3; //Max 3
+        var simiScore = (1 - (lavenD / 100));//Max 1
+        var channelScore = 0;//Max 3
         if (video["channelTitle"] !== "") {
 
             channelScore = _standardizeString(video["channelTitle"]).score(_standardizeString(_track_["artist"]), 1) * 3;
         }
-        var invertedOrderScore = (spermsTotal - pos) / spermsTotal;
+        var invertedOrderScore = (spermsTotal - pos) / spermsTotal; //Max 1
 
-        var stats = _calculateStatScore(data.items[0].statistics);
+        var stats = _calculateStatScore(data.items[0].statistics); //Max 8
 
+        //Max 26 (exclude invertedOrderScore only use for scaling)
         var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
 
         // console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
@@ -188,13 +180,13 @@ function _tubeHandler(_tube_, _track_, res) {
             //   console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
 
             var shouldUseNewResult = true;
-            if (tempScore === suppaWillyScore) {
-                var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
 
+            if (tempScore.score === suppaWillyScore.score) {
+                var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
                 shouldUseNewResult = (timeDiff < currTimeDiff);
                 console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
             }
-            if (tempScore >= suppaWillyScore && shouldUseNewResult) {
+            if ( _ricky_.isNewBetterThanOld(tempScore, suppaWillyScore) && shouldUseNewResult) {
                 suppaWillyScore = tempScore;
                 suppaWilly = video;
             }
@@ -225,7 +217,7 @@ function _tubeHandler(_tube_, _track_, res) {
             live: result.snippet.liveBroadcastContent || ''
         };
 
-        _tube_.videos.list({
+        _ricky_.tube.videos.list({
                 part: 'contentDetails,statistics',
                 id: video.id
             },
@@ -250,10 +242,8 @@ function _tubeHandler(_tube_, _track_, res) {
 
                 deferred.reject(new Error("Found " + results.length + " but no suitable match T_T"));
             } else {
-                deferred.resolve({
-                    "video": suppaWilly,
-                    "score": suppaWillyScore
-                });
+                suppaWilly.score = suppaWillyScore;
+                deferred.resolve(suppaWilly);
             }
         });
 
@@ -266,6 +256,24 @@ var Ricky = function(tube) {
 
     var self = this;
     self.tube = tube;
+
+    return self;
+};
+Ricky.prototype.changeTube = function(tube){
+
+    var self = this;
+
+    self.tube = tube;
+
+    return self;
+};
+
+Ricky.prototype.isNewBetterThanOld = function(newScore, oldScore, strict){
+
+    if(strict){
+        return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
+    }
+    return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
 };
 
 Ricky.prototype.search_your_tube = function(_track_) {
@@ -274,7 +282,7 @@ Ricky.prototype.search_your_tube = function(_track_) {
     var deferred = Q.defer();
 
     var query = _track_["name"] + " + " + _track_["artist"] + (_track_["album_artist"] == _track_["artist"] ? "" : " + " + _track_["album_artist"]);
-    console.log(_track_);
+    //console.log(_track_);
     var order = (Math.random() < 0.5 ? 'relevance' : 'viewCount'); //rating
     console.log("Searching query(orderBY ", order, "):", query);
     self.tube.search.list({
@@ -290,7 +298,7 @@ Ricky.prototype.search_your_tube = function(_track_) {
             if (err) {
                 deferred.reject(new Error(err));
             } else {
-                deferred.resolve(_tubeHandler(self.tube, _track_, res));
+                deferred.resolve(_tubeHandler(self, _track_, res));
             }
         }
     );
