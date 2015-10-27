@@ -33,7 +33,6 @@
     "request": "^2.65.0",
     "spotify-web-api-node": "^2.1.0",
     "string_score": "^0.1.22",
-    "youtube-api": "^1.2.1",
     "youtube-mp3-downloader": "^0.3.5",
     "ytdl-core": "^0.7.0"
   },

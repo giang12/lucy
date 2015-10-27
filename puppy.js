@@ -19,6 +19,10 @@
     "album_artist": "Broods",
     "spotify_url": "spotify:track:0ZyNhzQtb8sDCOaHt46I0o"
   },
+  paths: { //Path to local files will be set by Fred after succesfully download
+        yt_vid: null,
+        yt_aud: null
+    },
   "youtube": {
     "id": "9QrCFSJyabs",
     "urlShort": "http://youtu.be/9QrCFSJyabs",
@@ -68,6 +72,10 @@ var golden_retriever = function() {
 
             var ret = {
                 song: _track_,
+                paths: {
+                    yt_vid: null,
+                    yt_aud: null
+                },
                 youtube: null,
             };
 
@@ -96,7 +104,7 @@ var golden_retriever = function() {
     }
     return {
         fetch: _fetch,
-        bark: function(){
+        bark: function() {
 
             return "bark";
         }
