@@ -495,7 +495,7 @@ app.get('/index', function(req, res) {
             ret.push(Lucy.talk_or_listen(true)+"<br>");
             ret.push("Hey there " + User.info.display_name + ", you need to go in " + formatTime((new Date(User.expires_at) - new Date())) + " @ " + formatDate(User.expires_at));
             ret.push("<br>Vault Address @ <a onclick='window.location.href='vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "';return false;' href=vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + ">➥" + path.resolve(Lucy.where_is_your_vault()) + " </a><br>");
-            ret.push("<a href=logout>Logout</a>");
+            ret.push("<a href=logout>Logout</a> <i>*note that if you accessing from other devices, dont logout, cuz you can't log back in cuz spotify callback is set to localhost for now son");
             ret.push("<pre>Access_Token:<br> " + User.access_token);
             ret.push("<br>Refresh_Token:<br> " + User.refresh_token);
             ret.push("<br>User_Info:<br> " + JSON.stringify(User.info, null, 2) + "</pre>");
