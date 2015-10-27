@@ -262,7 +262,7 @@ var Lucy = (function() {
             var whoSay = people[Math.floor(Math.random() * people.length)];
             var whatQuotes = quotes[whoSay];
 
-            return(whoSay + ":" + whatQuotes[Math.floor(Math.random() * whatQuotes.length)]);
+            return (whoSay + ":" + whatQuotes[Math.floor(Math.random() * whatQuotes.length)]);
         }
         return;
     }
@@ -368,39 +368,67 @@ app.get('/authCallback', function(req, res) {
 
 });
 // app.get('/refresh_token', Ethel.refresh_token);
-app.get('/vault/:vaultAdd', function(req, res) {
+app.get('/vault/:vaultAdd/:orderBy?', function(req, res) {
 
     var vault = path.resolve(req.params.vaultAdd);
+    var orderBy = req.params.orderBy || "a";
+    var fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+
     var track_info = vault + "/track_info";
     var track_aud = vault + "/track_audio";
     var track_vid = vault + "/track_video";
     var total = 0;
 
-    var ret = [];
+    var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     ret.push(Lucy.talk_or_listen(true)+"<br>");
+    ret.push("<br><a onclick='window.history.href='/index';return false;' href=/index>⬅Back Index</a> | <A HREF='javascript:history.go(0)'>&#8634 Click to refresh the page</A><br>");
     ret.push("Vault is set to " + path.resolve(req.params.vaultAdd));
-    ret.push("<br><a onclick='window.history.back();return false;' href=/index>⬅Back Index</a> | <A HREF='javascript:history.go(0)'>&#8634 Click to refresh the page</A>");
 
     fs.readdir(track_info, function(err, tracks) {
         if (err) {
             ret.push("<br>" + new Error(err) + "<br>");
-            return res.send(ret.join("<br>"));
+            return res.send(ret.join(""));
         }
         total = tracks.length;
         var trackList = [];
-        trackList.push("<ol type='1'>");
+        trackList.push('<ol id="track-list" type="1">');
+        if (orderBy === "l" || orderBy === "c") {
+            tracks = tracks.map(function(v) {
+                return {
+                    name: v,
+                    time: fs.statSync(track_info + "/" + v).mtime.getTime()
+                };
+            })
+                .sort(function(a, b) {
+                    return (orderBy === "l" ? (b.time - a.time) : (a.time - b.time));
+                })
+                .map(function(v) {
+                    return v.name;
+                });
+        }
         tracks.forEach(function(elm, index, arr) {
             if (!/^\..*/.test(elm)) {
                 var params = encodeURIComponent(req.params.vaultAdd) + "/" + encodeURIComponent(elm);
-                trackList.push("<li><a onclick='window.location.href='/track/" + params + "';return false;' href=/track/" + params + ">➥" + elm + " </a></li>");
+                trackList.push("<li><a onclick='window.location.href='/track/" + params + "';return false;' href=/track/" + params + ">➥" + elm + " </a></li><br>");
             } else {
                 total--;
             }
         });
         trackList.push("</ol>");
-        ret.push("<br>There are tracks <b>" + total + "</b> in vault");
+        var aTag = "onclick='window.location.href='/vault/" + encodeURIComponent(req.params.vaultAdd) + "';return false;' href=/vault/" + encodeURIComponent(req.params.vaultAdd);
+        var aCommand = orderBy ==='a'? "class=active>➥" : (aTag+"/a>");
+        var Lcommand = orderBy ==='l'? "class=active>➥" : (aTag+"/l>");
+        var Ccommand = orderBy ==='c'? "class=active>➥" : (aTag+"/c>");
+
+        ret.push("<br>There are tracks <b>" + total + "</b> in vault orderBy <a "+aCommand+"Alphabet</a> | <a "+Lcommand+"Lastest</a> | <a "+Ccommand+"Chronological</a>");
         ret = ret.concat(trackList);
-        return res.send(ret.join("<br>"));
+        ret.push(
+            "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
+            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
+            "addStyleString('#track-list{ height:80%; width:90%; overflow-y:auto; overflow-x:hidden}');"+
+            "</script>"
+        );
+        return res.send(ret.join(""));
     });
 
 });
@@ -411,22 +439,22 @@ app.get('/playback/:trackAdd', function(req, res) {
     var token = trackAdd.split(".");
     var ext = token[token.length - 1];
     var range = req.headers.range;
-    var isVid = ext==="mp4";
+    var isVid = ext === "mp4";
     if (!fs.existsSync(file) || (ext !== "mp4" && ext !== "mp3")) {
         res.writeHead(404, {
             "Content-Type": "text/html"
         });
-        res.end("<br><a onclick='window.location.href='/index';return false;' href=/index><=Back Index</a><br><br>Cannot playback "+(isVid?"video":"audio"));
-    }else if (typeof range === 'undefined') {
+        res.end("<br><a onclick='window.location.href='/index';return false;' href=/index><=Back Index</a><br><br>Cannot playback " + (isVid ? "video" : "audio"));
+    } else if (typeof range === 'undefined') {
         res.writeHead(200, {
             "Content-Type": "text/html"
         });
-        if(isVid){
-        res.end('<video autoplay style="width:100%;height:90%" src="/playback/'+encodeURIComponent(trackAdd)+'" controls></video>');
-        }else{
-        res.end('<audio autoplay style="width:100%;height:50%" src="/playback/'+encodeURIComponent(trackAdd)+'" controls></audio>');
+        if (isVid) {
+            res.end('<video autoplay style="width:100%;height:90%" src="/playback/' + encodeURIComponent(trackAdd) + '" controls></video>');
+        } else {
+            res.end('<audio autoplay style="width:100%;height:50%" src="/playback/' + encodeURIComponent(trackAdd) + '" controls></audio>');
         }
-    }  else {
+    } else {
         var positions = range.replace(/bytes=/, "").split("-");
         var start = parseInt(positions[0], 10);
 
@@ -463,49 +491,56 @@ app.get('/track/:vaultAdd/:trackName', function(req, res) {
     var track_aud = vault + "/track_audio";
     var track_vid = vault + "/track_video";
     var total = 0;
-    var fullUrl = req.protocol + '://' + req.get('host');
 
-    var ret = [];
-
-    ret.push(Lucy.talk_or_listen(true));
+    var ret =['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
+    
+    ret.push(Lucy.talk_or_listen(true) + "<br>");
     ret.push("<br><a onclick='window.history.back();return false;' href=vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + ">⬅Back " + path.resolve(Lucy.where_is_your_vault()) + " </a><br>");
-    ret.push("<b>"+track+"</b><br>");
+    ret.push("<br><b>" + track + "</b>");
     jsonfile.readFile(track_info + "/" + track, function(err, info) {
         if (err) {
             ret.push("<br>" + new Error(err) + "<br>");
-            return res.send(ret.join("<br>"));
+            return res.send(ret.join(""));
         }
-        ret.push('<center><video width="65%"" height="55%" autoplay controls><source src="/playback/' + encodeURIComponent(info.paths.yt_vid) + '" type="video/mp4">Your browser does not support HTML5 video.</video></center>');
-        ret.push('<center>Audio Only: <audio width="100%" controls><source src="/playback/' + encodeURIComponent(info.paths.yt_aud) + '" type="audio/mp3">Your browser does not support HTML5 audio.</audio></center>');
-        ret.push("<pre>Track Info:<br> " + JSON.stringify(info, null, 2));
+        ret.push('<br><center><video controls width=90% autoplay><source src="/playback/' + encodeURIComponent(info.paths.yt_vid) + '" type="video/mp4">Your browser does not support HTML5 video.</video></center>');
+        ret.push('<br><center>Audio Only: <audio controls><source src="/playback/' + encodeURIComponent(info.paths.yt_aud) + '" type="audio/mp3">Your browser does not support HTML5 audio.</audio></center>');
+        ret.push("<pre>Track Info:<br> " + JSON.stringify(info, null, 2) + "</pre>");
+            
         ret.push(
             "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
-            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}')" +
+            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
             "</script>"
         );
-        return res.send(ret.join("<br>"));
+
+        ret.push(
+            "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
+            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
+            "addStyleString('#vid{margin:0; padding:0;height=55%; width=90% overflow:auto; background-color:blue}');" +
+            "</script>"
+        );
+        return res.send(ret.join(""));
     });
 
 });
 // // redirect all others to the index (HTML5 history)
 app.get('/index', function(req, res) {
-    var ret = [];
+    var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     Ethel.getMe()
         .then(function(User) {
-            ret.push(Lucy.talk_or_listen(true)+"<br>");
-            ret.push("Hey there " + User.info.display_name + ", you need to go in " + formatTime((new Date(User.expires_at) - new Date())) + " @ " + formatDate(User.expires_at));
-            ret.push("<br>Vault Address @ <a onclick='window.location.href='vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "';return false;' href=vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + ">➥" + path.resolve(Lucy.where_is_your_vault()) + " </a><br>");
-            ret.push("<a href=logout>Logout</a> <i>*note that if you accessing from other devices, dont logout, cuz you can't log back in cuz spotify callback is set to localhost for now son");
+            ret.push(Lucy.talk_or_listen(true) + "<br>");
+            ret.push("<br>Vault Address @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + path.resolve(Lucy.where_is_your_vault()) + " </a>");
+            ret.push("<br>Hey there " + User.info.display_name + ", you need to go in " + formatTime((new Date(User.expires_at) - new Date())) + " @ " + formatDate(User.expires_at));
+            ret.push("<br><br><a href=logout>Logout</a> <i>*note that if you accessing from other devices, dont logout, cuz you can't log back in cuz spotify callback is set to localhost for now son");
             ret.push("<pre>Access_Token:<br> " + User.access_token);
-            ret.push("<br>Refresh_Token:<br> " + User.refresh_token);
-            ret.push("<br>User_Info:<br> " + JSON.stringify(User.info, null, 2) + "</pre>");
+            ret.push("<br><br>Refresh_Token:<br> " + User.refresh_token);
+            ret.push("<br><br>User_Info:<br> " + JSON.stringify(User.info, null, 2) + "</pre>");
             ret.push(
-                "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
-                "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}')" +
-                "</script>"
+            "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
+            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
+            "</script>"
             );
 
-            res.send(ret.join("<br>"));
+            res.send(ret.join(""));
 
         }, function(err) {
             res.send("Hi, I'm Lucy <br> <br> <a href=login>Login</a>");
