@@ -2,13 +2,7 @@ require("string_score");
 var leven = require('leven');
 var Q = require('q');
 
-var _compare =  function (newScore, oldScore, strictly) {
-
-        if (strictly) {
-            return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
-        }
-        return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
-    };
+var _compare =  null;
 /**
  * Responsible for searching youtube
  * @param {[type]} name    [his name]
@@ -27,12 +21,25 @@ var _compare =  function (newScore, oldScore, strictly) {
  * @param {[type]} tube    [description]
  * 
  */
+function _defaultCompare(newScore, oldScore, strictly) {
+
+        if (strictly) {
+            return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
+        }
+        return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
+}
 function Ricky(compare, tube, name) {
 
     var self = this;
     self.name = name || ("Ricky<" + Math.random().toString() + ">");
     self.tube = tube;
-   // _compare = compare || ;
+    if(typeof compare !== "function"){
+        console.log("No compare function supplied, using default");
+        _compare = _defaultCompare;
+    }else{
+        _compare = compare;
+    }
+    
     return self;
 }
 Ricky.prototype.changeTube = function(tube) {

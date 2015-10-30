@@ -28,8 +28,8 @@ function _unlinkHandler(err) {
 function Fred(_vaultAddress_, _vaultName_, _name_) {
 
     var my = this;
-    my.Diana_aud = new Diana("Deputy Dawg(resp for aud convertion)");
-    my.Diana_vid = new Diana("Officer Ubu(resp for vid convertion)");
+    my.Diana_aud = new Diana("Deputy Dawg"); //(resp for aud convertion)
+    my.Diana_vid = new Diana("Officer Ubu"); //(resp for vid convertion)
     my.Puppy = new Puppy("Marco Polo");
 
     my.vaultAddress = "";
@@ -88,6 +88,32 @@ Fred.prototype.openvault = function() {
     return my;
 };
 
+
+var _check_vault_cache = new Cache({
+        stdTTL: 720, //12 mins,
+        checkperiod: 120,
+        useClones: true
+    })
+    .on("set", function(key, value) {
+        // ... do something ...   
+        console.log("Fred:check_vault cache :", key);
+        console.log("Stat: ", _check_vault_cache.getStats());
+    })
+    .on("del", function(key, value) {
+        // ... do something ...   
+        console.log("Fred:check_vault del:", key);
+        console.log("Stat: ", _check_vault_cache.getStats());
+    })
+    .on("expired", function(key, value) {
+        // ... do something ...   
+        console.log(key, "expired");
+        console.log("Stat: ", _check_vault_cache.getStats());
+    })
+    .on("flush", function() {
+        // ... do something ...   
+        console.log("Check_vault Cache Flushed");
+        console.log("Stat: ", _check_vault_cache.getStats());
+    });
 /**
  * [check_vault description]
  * @param  {[type]} _tube_    [Youtube Channel]
@@ -95,8 +121,16 @@ Fred.prototype.openvault = function() {
  * @return {[type]}           [description]
  */
 Fred.prototype.check_vault = function(_tube_, _trackID_) {
-    var deferred = Q.defer();
 
+    //check cache before committing to deep shit or search lol
+    var cache_value = _check_vault_cache.get( _trackID_ );
+
+    if(cache_value !== undefined){
+
+        console.log("Fred found a cache for", _trackID_, "matching to", cache_value.song.title, "-", cache_value.song.artist);
+        return Q.resolve(cache_value);
+    }
+    var deferred = Q.defer();
     var my = this;
 
     if (!my.vaultIsOpen) {
@@ -107,12 +141,26 @@ Fred.prototype.check_vault = function(_tube_, _trackID_) {
     console.log(my.name, "is checking for ", _trackID_, "in", my.vault);
 
     my.Puppy.fetch(_trackID_, _tube_).then(
-        function(trackInfo) { // this track info is the new search result
+        function(trackInfo) {
+        // this track info is the new search result, not entirely fill
+        // pass to save the baby to waterfall style fill out approriate part
+            my.save_the_baby(trackInfo).then(
+                function _cacheTheResult(_newborn_){
+                    //cache the results
+                    _check_vault_cache.set(_trackID_, _newborn_);
 
-            deferred.resolve(my.save_the_baby(trackInfo));
+                    deferred.resolve(_newborn_);
+
+                },function(err){
+                    /** Like these error ever happen lol?*/
+                    console.log(err);
+                    _check_vault_cache.del(_trackID_);
+                    deferred.reject(new Error(err));
+                });
         },
         function(err) {
             console.log(err);
+            _check_vault_cache.del(_check_vault_cache);
             deferred.reject(new Error(err));
         });
 
@@ -146,8 +194,8 @@ Fred.prototype.drop_the_baby = function(_abortedBae_) {
 
 Fred.prototype.convertMediaInvault = function() {
     var my = this;
-    my.Diana_aud.mp3ToOgg(my.audio_outputPath, my.audio_outputPath);
-    my.Diana_vid.mp4ToWebm(my.video_outputPath, my.video_outputPath);
+    //my.Diana_aud.mp3ToOgg(my.audio_outputPath, my.audio_outputPath);
+    //my.Diana_vid.mp4ToWebm(my.video_outputPath, my.video_outputPath);
     return;
 };
 /*
@@ -166,30 +214,30 @@ download to downloadq
  * @return {[Object]}  the baby saved in vault [Track Info: Read Puppy.js]
  */
 //stdTTL is in SECONDS
-var _workingQ = new Cache({
+var _downLoadQ = new Cache({
         stdTTL: 120, //2 mins,
         checkperiod: 120,
         useClones: true
     })
     .on("set", function(key, value) {
         // ... do something ...   
-        console.log("Download Cache put:", key);
-        console.log("Stat: ", _workingQ.getStats());
+        console.log("Download Queue addd:", key);
+        console.log("Stat: ", _downLoadQ.getStats());
     })
     .on("del", function(key, value) {
         // ... do something ...   
-        console.log("Download Cache del:", key);
-        console.log("Stat: ", _workingQ.getStats());
+        console.log("Download Queue removed:", key);
+        console.log("Stat: ", _downLoadQ.getStats());
     })
     .on("expired", function(key, value) {
         // ... do something ...   
         console.log(key, "expired");
-        console.log("Stat: ", _workingQ.getStats());
+        console.log("Stat: ", _downLoadQ.getStats());
     })
     .on("flush", function() {
         // ... do something ...   
-        console.log("Download Cache Flushed");
-        console.log("Stat: ", _workingQ.getStats());
+        console.log("Download Queue Flushed");
+        console.log("Stat: ", _downLoadQ.getStats());
     });
 
 function _hand_over(my, _mom_, _newborn_) {
@@ -219,12 +267,14 @@ function _hand_over(my, _mom_, _newborn_) {
         .on("finished", function(data) {
 
             console.log(data);
-            _workingQ.del(key);
+
+            _downLoadQ.del(key);
+
             my.convertMediaInvault();
             _mom_.resolve(_newborn_);
         })
         .on("error", function(error) {
-            _workingQ.del(key);
+            _downLoadQ.del(key);
             /**
              * on error remove the errornous download
              * Issue: when found better vid-> dl failed-> the "less suitable" vid in vaults is deleted lol
@@ -267,7 +317,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
         return Q.reject(new Error("vault is not opened, try re openvault vault"));
     }
     //temporary
-    var obj = _workingQ.get(key);
+    var obj = _downLoadQ.get(key);
 
     if (obj !== undefined) {
         console.log(my.name + ":", "Track already in Queue:", obj["song"]["title"], "(" + obj["song"]["id"] + ") matched to YT ID:", obj["youtube"]["title"], "(" + obj["youtube"]["urlShort"] + " | " + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
@@ -278,7 +328,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
     console.log("a.k.a", _newborn_["youtube"]["title"], " is the SUPPAWILLY");
     console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
 
-    _workingQ.set(key, _newborn_);
+    _downLoadQ.set(key, _newborn_);
 
     var fileName = my.stdName([_newborn_["song"]["title"], _newborn_["song"]["artist"]]);
 
@@ -289,7 +339,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
                 if (!my.Puppy.isNewBetterThanOld(_newborn_.youtube.score, obj.youtube.score, true)) {
                     console.log(obj["youtube"]["urlShort"]);
                     console.log(my.name, " found track in vault:", obj["song"]["id"], "(" + obj["song"]["title"] + ") matched to YT ID:", obj["youtube"]["urlShort"], "(" + obj["youtube"]["title"] + "|" + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
-                    _workingQ.del(key);
+                    _downLoadQ.del(key);
                     return deferred.resolve(obj);
                 }
             },

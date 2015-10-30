@@ -26,6 +26,7 @@
     "archiver": "^0.16.0",
     "async": "^1.5.0",
     "bug-killer": "^4.0.0",
+    "chokidar": "^1.2.0",
     "exists-sync": "0.0.3",
     "express": "^4.13.3",
     "express.io": "^1.1.13",

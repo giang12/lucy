@@ -227,7 +227,7 @@ var Lucy = (function() {
 
         if (alive) return;
 
-        if (!fs.existsSync("./config")) {
+        if (!existsSync("./config")) {
 
             console.log("set ./config pls");
             throw new Error("set ./config pls");
@@ -431,9 +431,7 @@ function _downloadZip(zippedFilename, files2Zip, req, res) {
     files2Zip.forEach(function(file, index, arr) {
 
         var filePath = file.address + "/" + file.name;
-        var A = existsSync(filePath);
-        console.log(filePath, A);
-        if (A) {
+        if (existsSync(filePath)) {
             archive.append(fs.createReadStream(filePath), {
                 name: file.name,
                 'comment': 'Created with heart by Giang @ github/giang12'
@@ -458,7 +456,7 @@ function _downloadZip(zippedFilename, files2Zip, req, res) {
  * @return {[type]}      [description]
  */
 function _downloadFile(file, req, res) {
-    console.log(file);
+    //console.log(file);
 
     res.download(file.address + "/" + file.name, file.name, function(err) {
         if (err) {
@@ -510,7 +508,7 @@ function _downloadFailureHandler(err, req, res, ie_lol) {
 app.get('/download/:vaultAdd/:trackName/:op', function(req, res) {
 
     var vault = path.resolve(req.params.vaultAdd);
-    console.log(vault);
+    //console.log(vault);
     var track_info = vault + "/track_info";
     var track_aud = vault + "/track_audio";
     var track_vid = vault + "/track_video";
@@ -611,7 +609,7 @@ function _playback_404(err, req, res) {
 
 function _prepStandAlonePlayer(fileURI, req){
     //ok we need to get 
-    console.log(fileURI);
+    //console.log(fileURI);
     var type =  encodeURIComponent(fileURI.type)+'/'+ encodeURIComponent(fileURI.ext);
 
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
@@ -641,7 +639,7 @@ function _prepStandAlonePlayer(fileURI, req){
  * @return {[type]}           [description]
  */
 function _getFileURIComponents(mediaFile){
-    console.log(mediaFile);
+    //console.log(mediaFile);
     var file = path.resolve(__dirname, mediaFile);
 
     var token = file.split("/");
@@ -664,7 +662,7 @@ function _getFileURIComponents(mediaFile){
 }
 
 app.get('/playback/:mediaFile', function(req, res) {
-    console.log(req.params.mediaFile);
+    //console.log(req.params.mediaFile);
     var fileURI = _getFileURIComponents(req.params.mediaFile);
 
     if ((fileURI.ext !== "mp4" && fileURI.ext !== "mp3" && fileURI.ext !== "webm" && fileURI.ext !== "ogg")) {
@@ -677,7 +675,7 @@ app.get('/playback/:mediaFile', function(req, res) {
     Q.nfcall(fs.stat, fileURI.file).then(
         _file_exist_and_have_stat,
         function(err) {
-            console.log(new Date(), ":", err);
+            console.log(err);
             return _playback_404(new Error("Cannot playback '" + fileURI.trackName + "." + fileURI.ext + "'"), req, res);
         }
     );
@@ -702,6 +700,7 @@ app.get('/playback/:mediaFile', function(req, res) {
             if(fileURI.ext === "ogg" || fileURI.ext === "webm"){
                 
                 //fs.unlink(fileURI.file, _unlinkHandler);
+                
                 errString += "<br>But good news is the corrupted file is recoverable, i'm working on it";
                 errString += "<br>Check back later (give me sometime) @ ";
                 errString += '<br><a href="/track/'+ encodeURIComponent(fileURI.vaultAdd) + "/" + encodeURIComponent(fileURI.trackName) +'">' + _get_req_url(req)+ ' </a>';
@@ -811,7 +810,7 @@ app.get('/vault/:vaultAdd/:orderBy?', function(req, res) {
 app.get('/track/:vaultAdd/:trackName', function(req, res) {
     var vault = path.resolve(req.params.vaultAdd);
     var track = req.params.trackName;
-    console.log("streaming", track, "from", vault);
+    console.log("streaming", track, "from", req.params.vaultAdd);
     var track_info = vault + "/track_info";
     var track_aud = vault + "/track_audio";
     var track_vid = vault + "/track_video";

@@ -151,7 +151,7 @@ function golden_retriever(name) {
     var spotify_daemon = require('./lib/spotify-node-applescript.js');
     var Q = require('q');
 
-    var Ricky = new(require('./ricky.js'))(_is_first_record_score_better_than_2nd_one, null, "Ramen");
+    var Ricky = new(require('./ricky.js'))(_is_first_record_score_better_than_2nd_one, null, "Rico");
     var Ethel = new(require('./ethel.js'))();
 
 
