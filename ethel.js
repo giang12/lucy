@@ -10,12 +10,14 @@ var jsonfile = require('jsonfile');
 var Q = require('q');
 
 
-function Ethel() {
+function Ethel(name) {
 
     var self = this;
-
+    self.name = name || ("Ethel<" + Math.random().toString() +">");
     self.credentials = require("./config/credentials.json").spotifyWebApi;
     self.scopes = require("./config/credentials.json").spotify_scopes;
+    
+    return self;
 }
 
 Ethel.prototype.getMe = function() {

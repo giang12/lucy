@@ -2,12 +2,112 @@ require("string_score");
 var leven = require('leven');
 var Q = require('q');
 
+var _compare =  function (newScore, oldScore, strictly) {
+
+        if (strictly) {
+            return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
+        }
+        return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
+    };
+/**
+ * Responsible for searching youtube
+ * @param {[type]} name    [his name]
+ * @param {[type]} compare [method to compare between 2 results]
+ *                         Given (scoreObj1, scoreObj2[, strict])
+ *                         should return true is score1 is better than 2 false orderwise,
+ *                         if strict === true, should compare stricly greater than
+ *                         otherwise greater than or equal will suffice
+ *                         Score Obj:
+ *                          {
+                                maxScore: total,
+                                score: score,
+                                percent: percent
+                            }
+ * 
+ * @param {[type]} tube    [description]
+ * 
+ */
+function Ricky(compare, tube, name) {
+
+    var self = this;
+    self.name = name || ("Ricky<" + Math.random().toString() + ">");
+    self.tube = tube;
+   // _compare = compare || ;
+    return self;
+}
+Ricky.prototype.changeTube = function(tube) {
+
+    var self = this;
+    self.tube = tube;
+    return self;
+};
+/**
+ * [search_your_tube description]
+ * @param  {[type]} _track_ [description]
+ * var song = {
+            "artist": artist,
+            "album": _track_.album.name,
+            "disc_number": _track_.disc_number,
+            "track_number": _track_.track_number,
+            "popularity": _track_.popularity,
+            "id": _track_.id,
+            "title": _track_.name,
+            "spotify_uri": _track_.uri,
+            "images": _track_.album.images,
+            "duration_ms": _track_.duration_ms,
+            "explicit": _track_.explicit
+        };
+ * @return {[type]}         [description]
+ */
+Ricky.prototype.search_your_tube = function(_song_) {
+
+    var self = this;
+    var deferred = Q.defer();
+    //console.log(_song_);
+    var order = _whichOrder();
+    var query = _makeQuery(_song_);
+
+    console.log(self.name, "is searching for", _song_.id , "a.k.a", query ,"(orderBY", order,")");
+
+    self.tube.search.list({
+            part: 'snippet',
+            type: 'video',
+            q: query,
+            maxResults: 50,
+            order: order, //viewCount relevance rating
+            //safeSearch: 'moderate',
+            videoEmbeddable: true
+        },
+        function(err, res) {
+            if (err) {
+                deferred.reject(new Error(err));
+            } else {
+                deferred.resolve(_tubeHandler(self, _song_, res));
+            }
+        }
+    );
+
+    return deferred.promise;
+};
+
+module.exports = Ricky;
+
+
+function _makeQuery(_song_) {
+
+    return _song_.title + " + " + _song_.artist;
+}
+
+function _whichOrder() {
+    //'relevance' : 'viewCount' : rating
+    return (Math.random() < 0.5 ? 'relevance' : 'viewCount');
+}
 
 function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
 
     var score = 0;
     var percent = 0;
-    var total = 26;// 11 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
+    var total = 26; // 11 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
 
     score += nameInTitle ? 1 : -1;
     score += artistInTitle ? 1 : -1;
@@ -32,9 +132,9 @@ function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit,
 
     score *= invertedOrderScore;
 
-    percent = Math.round((score / total) * 1000)/1000;
-    total = Math.round(total * 1000)/1000;
-    score = Math.round(score * 1000)/1000;
+    percent = Math.round((score / total) * 1000) / 1000;
+    total = Math.round(total * 1000) / 1000;
+    score = Math.round(score * 1000) / 1000;
 
     return {
         maxScore: total,
@@ -93,6 +193,7 @@ function _calculateStatScore(statsObj) {
 function _standardizeString(str) {
     //replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '')
     //return str
+    if (typeof str === 'undefined') return 'UNDEFINED';
 
     return str.replace(/\s/gi, '').toLowerCase();
 }
@@ -100,7 +201,7 @@ function _standardizeString(str) {
 
 function _tubeHandler(_ricky_, _track_, res) {
 
-    if(typeof _ricky_.tube !== 'function'){
+    if (typeof _ricky_.tube !== 'function') {
 
         return Q.reject(new Error("Invalid Tube"));
     }
@@ -110,7 +211,7 @@ function _tubeHandler(_ricky_, _track_, res) {
     var suppaWilly = null;
     var suppaWillyScore = {
         maxScore: 26,
-        score: -999999999,//bigger better
+        score: -999999999, //bigger better
         percent: 0,
     };
 
@@ -128,7 +229,7 @@ function _tubeHandler(_ricky_, _track_, res) {
 
 
         if (data.items.length < 1) {
-            
+
             return new Error("Baby Doesnt Have Info Such as BirthDate(creation date)");
         }
 
@@ -140,10 +241,10 @@ function _tubeHandler(_ricky_, _track_, res) {
         var timeDiff = Math.abs(video['duration'] - _track_['duration']);
         var vidTitle = _standardizeString(video["title"]);
         //laven score for vid title
-        var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["name"] + " official music video"), vidTitle);
+        var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["title"] + " official music video"), vidTitle);
 
 
-        var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["name"])) > -1;
+        var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["title"])) > -1;
         var artistInTitle = vidTitle.indexOf(_standardizeString(_track_["artist"])) > -1;
 
 
@@ -159,9 +260,9 @@ function _tubeHandler(_ricky_, _track_, res) {
         var isExplicit = vidTitle.indexOf("explicit") > -1;
 
         //11 boo-> max 11
-        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["name"]), 1) * 3; //Max 3
-        var simiScore = (1 - (lavenD / 100));//Max 1
-        var channelScore = 0;//Max 3
+        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["title"]), 1) * 3; //Max 3
+        var simiScore = (1 - (lavenD / 100)); //Max 1
+        var channelScore = 0; //Max 3
         if (video["channelTitle"] !== "") {
 
             channelScore = _standardizeString(video["channelTitle"]).score(_standardizeString(_track_["artist"]), 1) * 3;
@@ -184,9 +285,9 @@ function _tubeHandler(_ricky_, _track_, res) {
             if (tempScore.score === suppaWillyScore.score) {
                 var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
                 shouldUseNewResult = (timeDiff < currTimeDiff);
-                console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
+                //console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
             }
-            if ( _ricky_.isNewBetterThanOld(tempScore, suppaWillyScore) && shouldUseNewResult) {
+            if (_compare(tempScore, suppaWillyScore) && shouldUseNewResult) {
                 suppaWillyScore = tempScore;
                 suppaWilly = video;
             }
@@ -203,7 +304,7 @@ function _tubeHandler(_ricky_, _track_, res) {
     res.items.forEach(function(result, pos) {
 
         var each_data_deferred = Q.defer();
-
+        //console.log(result);
         var video = {
             id: result.id.videoId,
             urlShort: 'http://youtu.be/' + result.id.videoId,
@@ -250,60 +351,3 @@ function _tubeHandler(_ricky_, _track_, res) {
     return deferred.promise;
 
 }
-
-
-var Ricky = function(tube) {
-
-    var self = this;
-    self.tube = tube;
-
-    return self;
-};
-Ricky.prototype.changeTube = function(tube){
-
-    var self = this;
-
-    self.tube = tube;
-
-    return self;
-};
-
-Ricky.prototype.isNewBetterThanOld = function(newScore, oldScore, strict){
-
-    if(strict){
-        return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
-    }
-    return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
-};
-
-Ricky.prototype.search_your_tube = function(_track_) {
-
-    var self = this;
-    var deferred = Q.defer();
-
-    var query = _track_["name"] + " + " + _track_["artist"] + (_track_["album_artist"] == _track_["artist"] ? "" : " + " + _track_["album_artist"]);
-    //console.log(_track_);
-    var order = (Math.random() < 0.5 ? 'relevance' : 'viewCount'); //rating
-    console.log("Searching query(orderBY ", order, "):", query);
-    self.tube.search.list({
-            part: 'snippet',
-            type: 'video',
-            q: query,
-            maxResults: 50,
-            order: order, //viewCount relevance rating
-            //safeSearch: 'moderate',
-            videoEmbeddable: true
-        },
-        function(err, res) {
-            if (err) {
-                deferred.reject(new Error(err));
-            } else {
-                deferred.resolve(_tubeHandler(self, _track_, res));
-            }
-        }
-    );
-
-    return deferred.promise;
-};
-
-module.exports = Ricky;
