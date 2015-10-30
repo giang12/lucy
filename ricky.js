@@ -1,3 +1,5 @@
+"use strict";
+
 require("string_score");
 var leven = require('leven');
 var Q = require('q');
@@ -110,32 +112,36 @@ function _whichOrder() {
     return (Math.random() < 0.5 ? 'relevance' : 'viewCount');
 }
 
-function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
+function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
 
     var score = 0;
     var percent = 0;
-    var total = 26; // 11 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
+    var total = 21;//my age rn btw lol, feel old yet // 6 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
 
+    //best right best 2
     score += nameInTitle ? 1 : -1;
     score += artistInTitle ? 1 : -1;
 
+    //best left best 0
     score += isAudio ? -1 : 0;
     score += isLyric ? -1 : 0;
     score += isCredit ? -1 : 0;
     score += isLive ? -1 : 0;
     score += isCover ? -1 : 0;
+    score += isTeaser ? -1 : 0;
 
+    //best right best 4
     score += isOfficial ? 1 : 0;
     score += isMusic ? 1 : 0;
     score += isVideo ? 1 : 0;
     score += isExplicit ? 1 : 0;
 
 
-    score += simiScore;
+    score += simiScore; //max 1
 
-    score += nameInTitleScore;
-    score += channelScore;
-    score += statsScore;
+    score += nameInTitleScore; //max 3
+    score += channelScore; //max 3
+    score += statsScore; //max 8
 
     score *= invertedOrderScore;
 
@@ -251,25 +257,28 @@ function _tubeHandler(_ricky_, _track_, res) {
         var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["title"] + " official music video"), vidTitle);
 
 
+        //g1
         var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["title"])) > -1;
         var artistInTitle = vidTitle.indexOf(_standardizeString(_track_["artist"])) > -1;
 
-
+        //g2
         var isAudio = vidTitle.indexOf("audio") > -1;
         var isLyric = vidTitle.indexOf("lyric") > -1;
         var isCredit = vidTitle.indexOf("credit") > -1;
         var isLive = vidTitle.indexOf("live") > -1;
         var isCover = (vidTitle.indexOf("cover") > -1) || (vidTitle.indexOf("react") > -1) || (vidTitle.indexOf("response") > -1);
+        var isTeaser = vidTitle.indexOf("teaser") > -1;
 
+        //g3
         var isOfficial = vidTitle.indexOf("official") > -1;
         var isMusic = vidTitle.indexOf("music") > -1;
         var isVideo = vidTitle.indexOf("video") > -1;
         var isExplicit = vidTitle.indexOf("explicit") > -1;
 
-        //11 boo-> max 11
         var nameInTitleScore = vidTitle.score(_standardizeString(_track_["title"]), 1) * 3; //Max 3
         var simiScore = (1 - (lavenD / 100)); //Max 1
         var channelScore = 0; //Max 3
+
         if (video["channelTitle"] !== "") {
 
             channelScore = _standardizeString(video["channelTitle"]).score(_standardizeString(_track_["artist"]), 1) * 3;
@@ -278,10 +287,10 @@ function _tubeHandler(_ricky_, _track_, res) {
 
         var stats = _calculateStatScore(data.items[0].statistics); //Max 8
 
-        //Max 26 (exclude invertedOrderScore only use for scaling)
-        var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
+        //Max 21 (exclude invertedOrderScore only use for scaling)
+        var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
 
-        // console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
+         //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
 
         if (nameInTitle || (nameInTitleScore > 0.95)) {
 
