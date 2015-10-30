@@ -583,6 +583,7 @@ app.get('/error/:reporter/corruption/:file', function(req, res) {
     res.send(ret.join(''));
 
 });
+
 function _playback_404(err, req, res) {
 
     res.writeHead(404, {
@@ -607,27 +608,27 @@ function _playback_404(err, req, res) {
  * @return {[type]}              [description]
  */
 
-function _prepStandAlonePlayer(fileURI, req){
+function _prepStandAlonePlayer(fileURI, req) {
     //ok we need to get 
     //console.log(fileURI);
-    var type =  encodeURIComponent(fileURI.type)+'/'+ encodeURIComponent(fileURI.ext);
+    var type = encodeURIComponent(fileURI.type) + '/' + encodeURIComponent(fileURI.ext);
 
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     ret.push(Lucy.talk_or_listen(true));
     ret.push('<br><a onclick=window.location.href="' + encodeURI(_get_req_url(req, true)) + ';return false; href="' + encodeURI(_get_req_url(req, true)) + '"><=Back Index</a>');
-    
+
     ret.push("<center>");
     var params = encodeURIComponent(fileURI.vaultAdd) + "/" + encodeURIComponent(fileURI.trackName);
-    var dtag =  "onclick='window.location.href='/download/" + params + "/" + fileURI.ext +"';return false;' href=/download/" + params + "/" +fileURI.ext;
-    
+    var dtag = "onclick='window.location.href='/download/" + params + "/" + fileURI.ext + "';return false;' href=/download/" + params + "/" + fileURI.ext;
+
     ret.push("<br><br><b>Download: </b> ");
-    ret.push(" <a download " + dtag + " ><b>" + fileURI.trackName + "</b> ("+type+")</a>");
+    ret.push(" <a download " + dtag + " ><b>" + fileURI.trackName + "</b> (" + type + ")</a>");
     ret.push('<br>');
     var at = encodeURIComponent(fileURI.vaultAdd + "/" + fileURI.trackAdd + "/" + fileURI.trackName + '.' + fileURI.ext);
-    if(fileURI.type === "video"){
-    ret.push('<br><video autoplay style="width:100%; height:80%; min-height:80%; min-width:100%" src="/playback/'+ at +'" type="'+ type +'" controls></video>');
-    }else{
-     ret.push('<br><audio autoplay style-"height:50%"" style="width:100%;" src="/playback/'+ at +'" type="'+ type +'" controls></audio>');
+    if (fileURI.type === "video") {
+        ret.push('<br><video autoplay style="width:100%; height:80%; min-height:80%; min-width:100%" src="/playback/' + at + '" type="' + type + '" controls></video>');
+    } else {
+        ret.push('<br><audio autoplay style-"height:50%"" style="width:100%;" src="/playback/' + at + '" type="' + type + '" controls></audio>');
     }
     ret.push("</center");
     return ret.join("");
@@ -638,7 +639,7 @@ function _prepStandAlonePlayer(fileURI, req){
  * @param  {[type]} mediaFile [description]
  * @return {[type]}           [description]
  */
-function _getFileURIComponents(mediaFile){
+function _getFileURIComponents(mediaFile) {
     //console.log(mediaFile);
     var file = path.resolve(__dirname, mediaFile);
 
@@ -679,6 +680,7 @@ app.get('/playback/:mediaFile', function(req, res) {
             return _playback_404(new Error("Cannot playback '" + fileURI.trackName + "." + fileURI.ext + "'"), req, res);
         }
     );
+
     function _unlinkHandler(err) {
 
         if (err && err.code !== "ENOENT") {
@@ -697,13 +699,13 @@ app.get('/playback/:mediaFile', function(req, res) {
 
             console.log("FOUND AN ERRONOUS MEDIA FILE @", fileURI.file);
             var errString = "Erronous File: Cannot playback '" + fileURI.trackName + "." + fileURI.ext + "'";
-            if(fileURI.ext === "ogg" || fileURI.ext === "webm"){
-                
+            if (fileURI.ext === "ogg" || fileURI.ext === "webm") {
+
                 //fs.unlink(fileURI.file, _unlinkHandler);
-                
+
                 errString += "<br>But good news is the corrupted file is recoverable, i'm working on it";
                 errString += "<br>Check back later (give me sometime) @ ";
-                errString += '<br><a href="/track/'+ encodeURIComponent(fileURI.vaultAdd) + "/" + encodeURIComponent(fileURI.trackName) +'">' + _get_req_url(req)+ ' </a>';
+                errString += '<br><a href="/track/' + encodeURIComponent(fileURI.vaultAdd) + "/" + encodeURIComponent(fileURI.trackName) + '">' + _get_req_url(req) + ' </a>';
             }
             return _playback_404(new Error(errString), req, res);
         }
@@ -719,7 +721,7 @@ app.get('/playback/:mediaFile', function(req, res) {
             end = positions[1] ? parseInt(positions[1], 10) : total - 1,
             chunksize = (end - start) + 1;
 
-        if(start > end){
+        if (start > end) {
             //err playback 
             //emit something its running in <video> container
         }
@@ -840,15 +842,15 @@ app.get('/track/:vaultAdd/:trackName', function(req, res) {
         ret.push("<br><br><b>Download: </b>");
 
         var dirToCheck = {
-            video : ["mp4", "webm"],
-            audio : ["mp3", "ogg"]
+            video: ["mp4", "webm"],
+            audio: ["mp3", "ogg"]
         };
         var params = encodeURIComponent(req.params.vaultAdd) + "/" + encodeURIComponent(req.params.trackName);
         var tag;
-        Object.keys(dirToCheck).forEach(function(key){
-            dirToCheck[key].forEach(function(ext){
-                if(existsSync(req.params.vaultAdd + "/track_" + key + "/"  + req.params.trackName + "." + ext)){
-                    tag = "onclick='window.location.href='/download/" + params + "/" + ext +"';return false;' href=/download/" + params + "/" + ext;
+        Object.keys(dirToCheck).forEach(function(key) {
+            dirToCheck[key].forEach(function(ext) {
+                if (existsSync(req.params.vaultAdd + "/track_" + key + "/" + req.params.trackName + "." + ext)) {
+                    tag = "onclick='window.location.href='/download/" + params + "/" + ext + "';return false;' href=/download/" + params + "/" + ext;
                     ret.push(" <a download " + tag + ">➥" + key + "/" + ext + "</a> |");
                 }
             });
@@ -939,7 +941,7 @@ app.get('*', function(req, res) {
 });
 
 app.listen(port);
-console.log('Lucy is running @ ' + (app));
+console.log('Lucy is running @ port ' + port);
 
 function formatDate(date) {
     var d = new Date(date);

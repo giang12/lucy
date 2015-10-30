@@ -11,8 +11,9 @@ var YoutubeMp3Downloader = require('./lib/YoutubeMp3Downloader');
 var spotify_daemon = require('./lib/spotify-node-applescript.js');
 
 var Ethel = require('./ethel.js'); //spotifywebapi
-var Diana = require('./lib/DianaTheConverter.js'); //media converter agent
+//var Diana = require('./diana.js'); //media converter agent
 var Puppy = require('./puppy.js'); //track_info_outputPath retriever
+//var Diana = require('./lib/DianaTheConverter.js'); //media converter agent
 
 var APP_DIR = path.dirname(process.mainModule.filename);
 
@@ -28,25 +29,67 @@ function _unlinkHandler(err) {
 function Fred(_vaultAddress_, _vaultName_, _name_) {
 
     var my = this;
-    my.Diana_aud = new Diana("Deputy Dawg"); //(resp for aud convertion)
-    my.Diana_vid = new Diana("Officer Ubu"); //(resp for vid convertion)
-    my.Puppy = new Puppy("Marco Polo");
-
-    my.vaultAddress = "";
-    my.vaultName = "";
-
-    my.vaultIsOpen = false;
     my.name = _name_ || ("Fred<" + Math.random().toString() + ">");
-    return my.changevault(_vaultAddress_, _vaultName_);
+
+    //private watcher to watcher over our vault
+    //and their respective assignments
+    // my.security_crew_members = [{
+    //     watcher: new Diana("Deputy Dawg"),
+    //     area: null,
+    //     job: {
+    //         fromExt: null,
+    //         toExt: null,
+    //     },
+    //     contract: null
+    // }, {
+    //     watcher: new Diana("Officer Ubu"),
+    //     area: null,
+    //     job: {
+    //         fromExt: null,
+    //         toExt: null,
+    //     },
+    //     contract: null
+    // }];
+
+    //the good puppy that will fetch stuff
+    // my.Diana_aud = new Diana("Deputy Dawg(resp for aud convertion)");
+    // my.Diana_vid = new Diana("Officer Ubu(resp for vid convertion)");
+    my.Puppy = new Puppy("Marco Polo");
+    my.vaultIsOpen = false;
+    my.changevault(_vaultAddress_, _vaultName_);
+
+    return;
 }
+Fred.prototype.convertMediaInvault = function() {
+    var my = this;
+    //my.Diana_aud.mp3ToOgg(my.audio_outputPath, my.audio_outputPath);
+    //my.Diana_vid.mp4ToWebm(my.video_outputPath, my.video_outputPath);
+    return;
+}
+Fred.prototype.closevault = function() {
+
+    var my = this;
+    my.vaultIsOpen = false;
+    /** let the crew rest since we close down the shop 
+     *   aka unwatch*/
+    // my.security_crew_members.forEach(function(member, index, arr) {
+    //     //M.O.M - Ricky Hill  Movement @ https://www.youtube.com/watch?v=651E4R9RjAs
+    //     if(member.contract === null) {return;} 
+    //     member.watcher.unwatch(member.contract);
+    //     member.contract = null;
+    // });
+};
 
 Fred.prototype.changevault = function(_vaultAddress_, _vaultName_) {
 
     var my = this;
-    my.vaultIsOpen = false;
+
+    if(my.vaultIsOpen){
+        my.closevault();
+    }
     if (typeof _vaultAddress_ !== "string" || typeof _vaultName_ !== "string") {
 
-        return my;
+        return false;
     }
 
     my.vaultAddress = _vaultAddress_;
@@ -54,13 +97,45 @@ Fred.prototype.changevault = function(_vaultAddress_, _vaultName_) {
 
     my.vault = path.normalize((typeof vaultAddress === "string" ? my.vaultAddress : "./vaults") + (typeof my.vaultName === "string" ? "/" + my.vaultName + "/" : "/Lucy's vault/"));
     my.vault_resolved = path.resolve(my.vault);
-    my.audio_outputPath = my.vault_resolved + "/track_audio";
     my.track_info_outputPath = my.vault_resolved + "/track_info";
+    my.audio_outputPath = my.vault_resolved + "/track_audio";
     my.video_outputPath = my.vault_resolved + "/track_video";
     my.folders = [my.vault_resolved, my.audio_outputPath, my.track_info_outputPath, my.video_outputPath];
 
+    //my.security_crew_members[0].area = my.audio_outputPath;
+    //my.security_crew_members[0].job = {fromExt: "mp3", toExt: "ogg"};
+
+    //my.security_crew_members[1].area = my.video_outputPath;
+    //my.security_crew_members[1].job = {fromExt: "mp4", toExt: "webm"};
+
     return my.openvault();
 };
+
+
+/**
+ * [_secure_the_parameters description]
+ * @param  {[array]} assignment [list of tuples {watcher :, area:, contract}]
+ *
+ * @return {[type]}             [description]
+ */
+// Fred.prototype.security_crew_get_to_work = function() {
+
+//     var my = this;
+
+//     my.security_crew_members.forEach(function(member, index, arr) {
+
+//         //this is so beautiful
+//         //the members get their contract as they start watching the area they responsible for
+//         //lawl 
+//         //song suggestion time
+//         //Move On - Garden City Movement @ https://www.youtube.com/watch?v=651E4R9RjAs 
+//         if(member.contract !== null){
+//             throw new Error(member.watcher.name + " cannot work security at more than 2 places at once");
+//         }
+//         member.contract = member.watcher.watch(member.area, member.job);
+//     });
+//     return;
+// };
 
 Fred.prototype.openvault = function() {
 
@@ -72,47 +147,51 @@ Fred.prototype.openvault = function() {
         //console.log("vault folders:");
         //console.log(my.folders);
         my.vaultIsOpen = false;
-        return my;
+        return false;
     }
 
     my.folders.forEach(function(dir, index) {
         fs.ensureDirSync(dir);
     });
 
+    /** Hire back the crew back to
+     *   aka start watching over new area
+     */
+    //my.security_crew_get_to_work();
     my.convertMediaInvault();
-
     my.vaultIsOpen = true;
 
     console.log(my.name, "opened vault", my.vaultName, "@", my.vault);
 
-    return my;
+    return true;
 };
 
-
-var _check_vault_cache = new Cache({
+//check_vault cache
+//_trackID_ is key
+var Ely = new Cache({
         stdTTL: 720, //12 mins,
         checkperiod: 120,
         useClones: true
     })
     .on("set", function(key, value) {
         // ... do something ...   
-        console.log("Fred:check_vault cache :", key);
-        console.log("Stat: ", _check_vault_cache.getStats());
+        console.log("Ely cache", key);
+        console.log("For the functioning of vault checking", "Stat:", Ely.getStats());
     })
     .on("del", function(key, value) {
         // ... do something ...   
-        console.log("Fred:check_vault del:", key);
-        console.log("Stat: ", _check_vault_cache.getStats());
+        console.log("Ely del", key);
+        console.log("Stat: ", Ely.getStats());
     })
     .on("expired", function(key, value) {
         // ... do something ...   
-        console.log(key, "expired");
-        console.log("Stat: ", _check_vault_cache.getStats());
+        console.log(key, "in vault cache check expired");
+        console.log("Stat: ", Ely.getStats());
     })
     .on("flush", function() {
         // ... do something ...   
-        console.log("Check_vault Cache Flushed");
-        console.log("Stat: ", _check_vault_cache.getStats());
+        console.log("Ely flushed the cache for vault check");
+        console.log("Stat: ", Ely.getStats());
     });
 /**
  * [check_vault description]
@@ -123,9 +202,9 @@ var _check_vault_cache = new Cache({
 Fred.prototype.check_vault = function(_tube_, _trackID_) {
 
     //check cache before committing to deep shit or search lol
-    var cache_value = _check_vault_cache.get( _trackID_ );
+    var cache_value = Ely.get(_trackID_);
 
-    if(cache_value !== undefined){
+    if (cache_value !== undefined) {
 
         console.log("Fred found a cache for", _trackID_, "matching to", cache_value.song.title, "-", cache_value.song.artist);
         return Q.resolve(cache_value);
@@ -142,25 +221,26 @@ Fred.prototype.check_vault = function(_tube_, _trackID_) {
 
     my.Puppy.fetch(_trackID_, _tube_).then(
         function(trackInfo) {
-        // this track info is the new search result, not entirely fill
-        // pass to save the baby to waterfall style fill out approriate part
+            // this track info is the new search result, not entirely fill
+            // pass to save the baby to waterfall style fill out approriate part
             my.save_the_baby(trackInfo).then(
-                function _cacheTheResult(_newborn_){
+                function _cacheTheResult(_newborn_) {
                     //cache the results
-                    _check_vault_cache.set(_trackID_, _newborn_);
+                    Ely.set(_trackID_, _newborn_);
 
                     deferred.resolve(_newborn_);
 
-                },function(err){
+                },
+                function(err) {
                     /** Like these error ever happen lol?*/
                     console.log(err);
-                    _check_vault_cache.del(_trackID_);
+                    Ely.del(_trackID_);
                     deferred.reject(new Error(err));
                 });
         },
         function(err) {
             console.log(err);
-            _check_vault_cache.del(_check_vault_cache);
+            Ely.del(Ely);
             deferred.reject(new Error(err));
         });
 
@@ -191,13 +271,6 @@ Fred.prototype.clone_the_baby = function(vaultDes) {
 Fred.prototype.drop_the_baby = function(_abortedBae_) {
 
 };
-
-Fred.prototype.convertMediaInvault = function() {
-    var my = this;
-    //my.Diana_aud.mp3ToOgg(my.audio_outputPath, my.audio_outputPath);
-    //my.Diana_vid.mp4ToWebm(my.video_outputPath, my.video_outputPath);
-    return;
-};
 /*
 Transaction Procedure save t
 read track_info_outputPath in vault's downloadq[1] && track_info_outputPath[2]
@@ -213,31 +286,31 @@ download to downloadq
  * @param  {[Object]} _newborn_ [Track Info: Read Puppy.js]
  * @return {[Object]}  the baby saved in vault [Track Info: Read Puppy.js]
  */
-//stdTTL is in SECONDS
-var _downLoadQ = new Cache({
-        stdTTL: 120, //2 mins,
+//var key = _newborn_.song.id;
+var ZaPa = new Cache({
+        stdTTL: 120, //2 mins,//stdTTL is in SECONDS
         checkperiod: 120,
         useClones: true
     })
     .on("set", function(key, value) {
         // ... do something ...   
-        console.log("Download Queue addd:", key);
-        console.log("Stat: ", _downLoadQ.getStats());
+        console.log("ZaPa added", key, "to the downloading Q");
+        console.log("Stat: ", ZaPa.getStats());
     })
     .on("del", function(key, value) {
         // ... do something ...   
-        console.log("Download Queue removed:", key);
-        console.log("Stat: ", _downLoadQ.getStats());
+        console.log("ZaPa removed", key);
+        console.log("Stat: ", ZaPa.getStats());
     })
     .on("expired", function(key, value) {
         // ... do something ...   
-        console.log(key, "expired");
-        console.log("Stat: ", _downLoadQ.getStats());
+        console.log(key, "in the downloading Q expired");
+        console.log("Stat: ", ZaPa.getStats());
     })
     .on("flush", function() {
         // ... do something ...   
-        console.log("Download Queue Flushed");
-        console.log("Stat: ", _downLoadQ.getStats());
+        console.log("ZaPa got mad and push everyone out of the Q");
+        console.log("Stat: ", ZaPa.getStats());
     });
 
 function _hand_over(my, _mom_, _newborn_) {
@@ -268,13 +341,12 @@ function _hand_over(my, _mom_, _newborn_) {
 
             console.log(data);
 
-            _downLoadQ.del(key);
-
+            ZaPa.del(key);
             my.convertMediaInvault();
             _mom_.resolve(_newborn_);
         })
         .on("error", function(error) {
-            _downLoadQ.del(key);
+            ZaPa.del(key);
             /**
              * on error remove the errornous download
              * Issue: when found better vid-> dl failed-> the "less suitable" vid in vaults is deleted lol
@@ -316,8 +388,8 @@ Fred.prototype.save_the_baby = function(_newborn_) {
         console.log(my.name + ":", "vault is not opened, try re openvault vault");
         return Q.reject(new Error("vault is not opened, try re openvault vault"));
     }
-    //temporary
-    var obj = _downLoadQ.get(key);
+
+    var obj = ZaPa.get(key);
 
     if (obj !== undefined) {
         console.log(my.name + ":", "Track already in Queue:", obj["song"]["title"], "(" + obj["song"]["id"] + ") matched to YT ID:", obj["youtube"]["title"], "(" + obj["youtube"]["urlShort"] + " | " + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
@@ -328,7 +400,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
     console.log("a.k.a", _newborn_["youtube"]["title"], " is the SUPPAWILLY");
     console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
 
-    _downLoadQ.set(key, _newborn_);
+    ZaPa.set(key, _newborn_);
 
     var fileName = my.stdName([_newborn_["song"]["title"], _newborn_["song"]["artist"]]);
 
@@ -339,7 +411,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
                 if (!my.Puppy.isNewBetterThanOld(_newborn_.youtube.score, obj.youtube.score, true)) {
                     console.log(obj["youtube"]["urlShort"]);
                     console.log(my.name, " found track in vault:", obj["song"]["id"], "(" + obj["song"]["title"] + ") matched to YT ID:", obj["youtube"]["urlShort"], "(" + obj["youtube"]["title"] + "|" + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
-                    _downLoadQ.del(key);
+                    ZaPa.del(key);
                     return deferred.resolve(obj);
                 }
             },

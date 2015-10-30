@@ -4,3 +4,4 @@ node_modules
 vaults
 config
 npm-debug.log
+config-example/user.json
