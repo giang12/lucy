@@ -398,7 +398,8 @@ Fred.prototype.save_the_baby = function(_newborn_) {
 
     console.log(_newborn_["youtube"]["urlShort"]);
     console.log("a.k.a", _newborn_["youtube"]["title"], " is the SUPPAWILLY");
-    console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
+    console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"]);
+    console.log(my.name+":", "OldSCORE:", _newborn_["youtube"].score, "NewSCORE:", obj["youtube"].score);
 
     ZaPa.set(key, _newborn_);
 
