@@ -398,8 +398,6 @@ Fred.prototype.save_the_baby = function(_newborn_) {
 
     console.log(_newborn_["youtube"]["urlShort"]);
     console.log("a.k.a", _newborn_["youtube"]["title"], " is the SUPPAWILLY");
-    console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"]);
-    console.log(my.name+":", "OldSCORE:", _newborn_["youtube"].score, "NewSCORE:", obj["youtube"].score);
 
     ZaPa.set(key, _newborn_);
 
@@ -415,8 +413,14 @@ Fred.prototype.save_the_baby = function(_newborn_) {
                     ZaPa.del(key);
                     return deferred.resolve(obj);
                 }
+                //new one is better than old one, update it
+                console.log(my.name, "is updating track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
+                console.log("Old Track:", obj["song"]["title"], "(" + obj["song"]["id"] + ") matched to YT ID:", obj["youtube"]["title"], "(" + obj["youtube"]["urlShort"] + " | " + obj["youtube"]["channelTitle"] + ") | obj:", _newborn_["youtube"].score);
+                return _hand_over(my, deferred, _newborn_);
+                
             },
             function nup(err) {
+                console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
                 return _hand_over(my, deferred, _newborn_);
             }
     );
