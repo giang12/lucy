@@ -63,13 +63,21 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 305.0,
-		"last_filter": "install",
+		"height": 400.0,
+		"last_filter": "in",
 		"selected_items":
 		[
 			[
-				"install",
+				"in",
 				"Package Control: Install Package"
+			],
+			[
+				"insta",
+				"Colorsublime: Install Theme"
+			],
+			[
+				"install",
+				"Colorsublime: Install Theme"
 			],
 			[
 				"remove",
@@ -77,10 +85,6 @@
 			],
 			[
 				"instal",
-				"Package Control: Install Package"
-			],
-			[
-				"insta",
 				"Package Control: Install Package"
 			],
 			[
@@ -110,10 +114,17 @@
 	},
 	"expanded_folders":
 	[
-		"/Users/Giang/Desktop/lucy"
+		"/Users/Giang/Desktop/Git/lucy",
+		"/Users/Giang/Desktop/Git/lucy/config",
+		"/Users/Giang/Desktop/Git/lucy/logs",
+		"/Users/Giang/Desktop/Git/lucy/routes",
+		"/Users/Giang/Desktop/Git/lucy/vaults"
 	],
 	"file_history":
 	[
+		"/Users/Giang/Desktop/Git/lucy/fred.js",
+		"/Users/Giang/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/Giang/Desktop/Git/lucy/diana.js",
 		"/Users/Giang/Desktop/lucy/lucy.js",
 		"/Users/Giang/Desktop/lucy/fred.js",
 		"/Users/Giang/Desktop/lucy/lib/DianaTheConverter.js",
@@ -121,7 +132,6 @@
 		"/Users/Giang/Desktop/lucy/diana.js",
 		"/Users/Giang/Desktop/lucy/ricky.js",
 		"/Users/Giang/Desktop/lucy/config/user.json",
-		"/Users/Giang/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
 		"/Users/Giang/Desktop/lucy/README.md",
 		"/Users/Giang/Desktop/lucy/package.json",
 		"/Users/Giang/Library/Application Support/Sublime Text 3/Packages/SideBarEnhancements/Side Bar.sublime-settings",
@@ -148,6 +158,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			".del",
 			"app.",
 			"Diana",
 			"security_crew_members",
@@ -271,11 +282,11 @@
 		"selected_items":
 		[
 			[
-				"fre",
+				"fred",
 				"fred.js"
 			],
 			[
-				"fred",
+				"fre",
 				"fred.js"
 			],
 			[

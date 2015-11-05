@@ -234,7 +234,7 @@ var Lucy = (function() {
         }
         quotes = jsonfile.readFileSync("./config/quotes.json");
         vault = jsonfile.readFileSync("./config/vaults.json").main_vault;
-        vaultAdd = vault.location + "/" + vault.name;
+        vaultAdd = path.normalize(vault.location + "/" + vault.name);
         vaultKeeper = new Fred(vault.location, vault.name, "Fred");
 
         credentials = jsonfile.readFileSync("./config/credentials.json");
@@ -758,7 +758,7 @@ app.get('/vault/:vaultAdd/:orderBy?', function(req, res) {
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     ret.push(Lucy.talk_or_listen(true) + "<br>");
     ret.push("<br><a onclick='window.history.href='/index';return false;' href=/index>⬅Back Index</a> | <A HREF='javascript:history.go(0)'>&#8634 Click to refresh the page</A>");
-    ret.push("<br>Vault is set to " + path.resolve(req.params.vaultAdd));
+    ret.push("<br>Vault is set to " + path.normalize(req.params.vaultAdd));
 
     fs.readdir(track_info, function(err, tracks) {
         if (err) {
@@ -784,7 +784,7 @@ app.get('/vault/:vaultAdd/:orderBy?', function(req, res) {
         }
         tracks.forEach(function(elm, index, arr) {
             if (!/^\..*/.test(elm)) {
-                var params = encodeURIComponent(req.params.vaultAdd) + "/" + encodeURIComponent(elm);
+                var params = encodeURIComponent(req.params.vaultAdd) + "/" + encodeURIComponent(elm) + "/" + encodeURIComponent(_get_req_url(req));
                 trackList.push("<li><a onclick='window.location.href='/track/" + params + "';return false;' href=/track/" + params + ">➥" + elm + " </a></li><br>");
             } else {
                 total--;
@@ -809,7 +809,7 @@ app.get('/vault/:vaultAdd/:orderBy?', function(req, res) {
 
 });
 
-app.get('/track/:vaultAdd/:trackName', function(req, res) {
+app.get('/track/:vaultAdd/:trackName/:cb?', function(req, res) {
     var vault = path.resolve(req.params.vaultAdd);
     var track = req.params.trackName;
     console.log("streaming", track, "from", req.params.vaultAdd);
@@ -821,7 +821,11 @@ app.get('/track/:vaultAdd/:trackName', function(req, res) {
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
 
     ret.push(Lucy.talk_or_listen(true) + "<br>");
-    ret.push("<br><a onclick='window.history.back();return false;' href=/vault/" + encodeURIComponent(req.params.vaultAdd) + ">⬅Back</a>");
+    if(!req.params.cb){
+        ret.push("<br><a onclick='window.history.back();return false;' href=/vault/" + encodeURIComponent(req.params.vaultAdd) + ">⬅Back</a>");
+    }else{
+        ret.push('<br><a href=' + url.parse(req.params.cb).href + '>⬅Back</a>');
+    }
     ret.push("<center><b>" + track + "</b></center>");
     ret.push("<center>");
     jsonfile.readFile(track_info + "/" + track, function(err, info) {

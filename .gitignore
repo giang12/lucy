@@ -5,3 +5,5 @@ vaults
 config
 npm-debug.log
 config-example/user.json
+
+*.sublime-workspace

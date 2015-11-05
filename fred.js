@@ -95,7 +95,7 @@ Fred.prototype.changevault = function(_vaultAddress_, _vaultName_) {
     my.vaultAddress = _vaultAddress_;
     my.vaultName = _vaultName_;
 
-    my.vault = path.normalize((typeof vaultAddress === "string" ? my.vaultAddress : "./vaults") + (typeof my.vaultName === "string" ? "/" + my.vaultName + "/" : "/Lucy's vault/"));
+    my.vault = path.normalize((typeof vaultAddress === "string" ? my.vaultAddress : "./vaults") + "/" + (typeof my.vaultName === "string" ? my.vaultName : "Lucy's vault") + "/" );
     my.vault_resolved = path.resolve(my.vault);
     my.track_info_outputPath = my.vault_resolved + "/track_info";
     my.audio_outputPath = my.vault_resolved + "/track_audio";
@@ -240,7 +240,7 @@ Fred.prototype.check_vault = function(_tube_, _trackID_) {
         },
         function(err) {
             console.log(err);
-            Ely.del(Ely);
+            Ely.del(_trackID_);
             deferred.reject(new Error(err));
         });
 
