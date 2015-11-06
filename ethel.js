@@ -208,7 +208,7 @@ var _getPlaylists = function(spotifyApi, userID) {
                 function(err) {
                     deferred.reject(new Error(err));
 
-                });
+                }).done();
         }, function(err) {
             deferred.reject(new Error(err));
         });

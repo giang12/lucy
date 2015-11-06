@@ -56,17 +56,28 @@ Ricky.prototype.changeTube = function(tube) {
  * [search_your_tube description]
  * @param  {[type]} _track_ [description]
  * var song = {
+            "breadcrumb": "Lucy:Giang@github/giang12:nggiang12@gmail",
             "artist": artist,
+            "author": artist,
+            "albumartist": artist,
             "album": _track_.album.name,
-            "disc_number": _track_.disc_number,
-            "track_number": _track_.track_number,
+            "disc": _track_.disc_number,
+            "track": _track_.track_number,
             "popularity": _track_.popularity,
             "id": _track_.id,
             "title": _track_.name,
             "spotify_uri": _track_.uri,
             "images": _track_.album.images,
-            "duration_ms": _track_.duration_ms,
-            "explicit": _track_.explicit
+            "duration": _track_.duration_ms,
+            "explicit": _track_.explicit,
+            "grouping": "",
+            "composer": "",
+            "year": "",
+            "comment": "",
+            "genre": "",
+            "copyright": "",
+            "description": "",
+            "lyrics": ""
         };
  * @return {[type]}         [description]
  */

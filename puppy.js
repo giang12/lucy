@@ -150,6 +150,7 @@ function golden_retriever(name) {
 
     var spotify_daemon = require('./lib/spotify-node-applescript.js');
     var Q = require('q');
+    require("string_score");
 
     var Ricky = new(require('./ricky.js'))(_is_first_record_score_better_than_2nd_one, null, "Rico");
     var Ethel = new(require('./ethel.js'))();
@@ -169,15 +170,60 @@ function golden_retriever(name) {
 
     function _fetch(searchTerm, tube) {
 
-        var q = _sniff(searchTerm);
+        var id = _sniff(searchTerm);
 
-        console.log(self.name, "is fetching for searchTerm", searchTerm, "<-before:after->", q);
 
-        if (q === null) {
-            return Q.reject(new Error("Invalid Track Id Yo"));
+        if (id === null) {
+            console.log(self.name, "is fetching for searchTerm", searchTerm, "<-before:after->", searchTerm);
+            return _fetchWithQ(Ricky.changeTube(tube), searchTerm);
         }
-        return _fetchWithID(Ricky.changeTube(tube), q);
+        console.log(self.name, "is fetching for searchTerm", searchTerm, "<-before:after->", id);
+        return _fetchWithID(Ricky.changeTube(tube), id);
     }
+     /**
+     * [_fetch description]
+     * @param  {[string]} _trackID_ [spotifyID eg 0eGsygTp906u18L0Oimnem but will also acceppt spotify:track:0eGsygTp906u18L0Oimnem]
+     * @param  {[Func]} _tube_    [Youtube Channel]
+     * @return {[Object]}           [Track_info record]
+     */
+    //use echonest to search for this
+    function _fetchWithQ(_ricky_, _q_) {
+        var deferred = Q.defer();
+
+        console.log(self.name, "is retrieving info for", _q_);
+
+        Ethel.getSpotifyApi().searchTracks(_q_).then(
+            function(data) {
+
+                // Print some information about the results
+                console.log('I got ' + data.body.tracks.total + ' results!');
+                if(data.body.tracks.total < 1){
+
+                return deferred.reject(new Error("There isn't any tracks assiciated with " + _q_ +" YO!"));
+                }
+                //this is the worst way to pick one from a bunch results but working well so lol
+                var _track_ = _who_is_the_suppa_hottie(data.body.tracks.items, _q_);
+                return deferred.resolve(_fetchTrack(_ricky_, _track_));
+
+            }, function(err) {
+
+                return deferred.reject(new Error("The puppy got lost yo"));
+            }).done();
+
+        return deferred.promise;
+    }
+    function _who_is_the_suppa_hottie(baes, judge){
+
+      var index = 0;
+      var ey = baes[index]; //temp
+      while(judge.score(ey.name, 0.5) < 0.5 && index < baes.length - 1){
+        index ++;
+        ey = baes[index]
+      };
+
+      return ey;
+    }
+
     /**
      * [_fetch description]
      * @param  {[string]} _trackID_ [spotifyID eg 0eGsygTp906u18L0Oimnem but will also acceppt spotify:track:0eGsygTp906u18L0Oimnem]
@@ -191,43 +237,54 @@ function golden_retriever(name) {
         console.log(self.name, "is retrieving info for", _trackID_);
 
         Ethel.getSpotifyApi().getTrack(_trackID_).then(
-            function(_track_) {
-                //our job is to fill this record out and keep it up to date as best as we can
-                var track_record = _fetchPristineTrackRecord();
-                var _song_ = _constructSong(_track_.body);
+            function(data){
 
-                //searching info accross channels, easily add more channels
-                //[youtube, soundcloud, lastfm] ORDER IMPORTANT
-                var searchResults = [_fetchYoutube(_ricky_, _song_)];
-
-                //only accept result when all channels give back result
-                //this is sorta bad, but we only use youtube and spotify now so its ok
-                //but when we use more than 3 channels, add some lazy track_info retrieval system yo
-
-                Q.all(searchResults).then(function(data) {
-                        track_record.song = _song_;
-                        track_record.spotify = _track_.body;
-
-                        if(typeof data[0] !== 'object' || !data[0].hasOwnProperty("score")){
-
-                          return deferred.reject(new Error(_ricky_.name + " said sr cuz he couldnt find any youtube info for this track >.<"));
-                        }
-                        track_record.youtube = data[0];
-                        deferred.resolve(track_record);
-                    },
-                    function(err) {
-                        deferred.reject(new Error(err));
-
-                    });
-
+              deferred.resolve(_fetchTrack(_ricky_, data.body));
             }, function(err) {
 
-                deferred.reject(new Error("The puppy got lost yo"));
+              deferred.reject(new Error("The puppy got lost yo"));
             }).done();
 
         return deferred.promise;
     }
+    /**
+     * [_fetchTrack description]
+     * @param  {OBJ} _track_ Spotify track obj
+     * @return {Object}         Lucy track_record obj
+     */
+    function _fetchTrack(_ricky_, _track_) {
 
+      var deferred = Q.defer();
+      //our job is to fill this record out and keep it up to date as best as we can
+      var track_record = _fetchPristineTrackRecord();
+      var _song_ = _constructSong(_track_);
+
+      //searching info accross channels, easily add more channels
+      //[youtube, soundcloud, lastfm] ORDER IMPORTANT
+      var searchResults = [_fetchYoutube(_ricky_, _song_)];
+
+      //only accept result when all channels give back result
+      //this is sorta bad, but we only use youtube and spotify now so its ok
+      //but when we use more than 3 channels, add some lazy track_info retrieval system yo
+
+      Q.all(searchResults).then(function(data) {
+              track_record.song = _song_;
+              track_record.spotify = _track_;
+
+              if (typeof data[0] !== 'object' || !data[0].hasOwnProperty("score")) {
+
+                  return deferred.reject(new Error(_ricky_.name + " said sr cuz he couldnt find any youtube info for this track >.<"));
+              }
+              track_record.youtube = data[0];
+              deferred.resolve(track_record);
+          },
+          function(err) {
+              deferred.reject(new Error(err));
+
+          }).done();
+
+      return deferred.promise;
+    }
     /**
      * this currently doesnt take in account of maxScore changing
      * add, if maxScore diff, rescale base on high maxScore, than output accordingly
