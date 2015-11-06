@@ -15,10 +15,12 @@ var Youtube = require("youtube-api"),
 var Q = require('q');
 var archiver = require('archiver');
 var existsSync = require('exists-sync');
+
 var Ricky = require('./ricky.js');
 var Fred = require('./fred.js');
 var Ethel = new(require('./ethel.js'))("Ethel");
 
+var make = require('./lib/make.js');
 
 var Lucy = (function() {
 
@@ -887,8 +889,9 @@ app.get('/index', function(req, res) {
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     Ethel.getMe()
         .then(function(User) {
+
             ret.push(Lucy.talk_or_listen(true));
-            ret.push("<br>Hey there " + User.info.display_name + ", you need to go in " + formatTime((new Date(User.expires_at) - new Date())) + " @ " + formatDate(User.expires_at));
+            ret.push("<br>Hey there " + User.info.display_name + ", you need to go in " + make.formatTime((new Date(User.expires_at)) - (new Date())) + " @ " + make.formatDate(User.expires_at) );
             ret.push("<br><br>Vault Address @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + (Lucy.where_is_your_vault()) + " </a>");
 
             ret.push('<center><br><br><input style="width: 80%; height:50px; font-size:24px;" id="searchBox" type="text" name="spotify:track:43wtbrVn3ZSN8sz5MLgg4C or 43wtbrVn3ZSN8sz5MLgg4C or searchTerm" value="">');
@@ -948,128 +951,4 @@ app.get('*', function(req, res) {
 app.listen(port);
 console.log('Lucy is running @ port ' + port);
 
-function formatDate(date) {
-    var d = new Date(date);
-    var hh = d.getHours();
-    var m = d.getMinutes();
-    var s = d.getSeconds();
-    var dd = "AM";
-    var h = hh;
-    if (h >= 12) {
-        h = hh - 12;
-        dd = "PM";
-    }
-    if (h === 0) {
-        h = 12;
-    }
-    m = m < 10 ? "0" + m : m;
 
-    s = s < 10 ? "0" + s : s;
-
-    /* if you want 2 digit hours:
-    h = h<10?"0"+h:h; */
-
-    var pattern = new RegExp("0?" + hh + ":" + m + ":" + s);
-
-    var replacement = h + ":" + m;
-    // if you want to add seconds
-    replacement += ":" + s;
-    replacement += " " + dd;
-
-    return date.replace(pattern, replacement);
-}
-var ms2s = 1000,
-    s2m = ms2s * 60,
-    m2h = s2m * 60,
-    h2d = m2h * 24;
-
-function timeDiff(time1, time2, op) {
-
-    if (typeof time1 === "object")
-        time1 = time1.getTime();
-    if (typeof time2 === "object")
-        time2 = time2.getTime();
-    if (typeof time1 !== "number" || typeof time2 !== "number")
-        throw new Error("Unexpected Argument");
-
-    if (time1 < time2)
-        return formatTime(time2 - time1, op);
-
-    return formatTime(time1 - time2, op);
-}
-
-function formatTime(ms, op) {
-
-    if (typeof ms !== "number")
-        throw new Error("Unexpected Argument");
-
-    var _milliseconds = ms % 1000 || 0;
-    var _seconds = Math.floor(ms / ms2s) % 60 || 0;
-    var _minutes = Math.floor(ms / s2m) % 60 || 0;
-    var _hours = Math.floor(ms / m2h) % 24 || 0;
-    var _days = Math.floor(ms / h2d) || 0;
-    var _stringFormatted = (_days !== 0 ? _days + (_days > 1 ? " days " : " day ") : "") +
-        (_hours !== 0 ? _hours + (_hours > 1 ? " hours " : " hour ") : "") +
-        (_minutes !== 0 ? _minutes + (_minutes > 1 ? " minutes " : " minute ") : "") +
-        (_seconds !== 0 ? _seconds + (_seconds > 1 ? " seconds " : " second ") : "");
-    switch (op) {
-
-        case "s":
-        case "second":
-        case "seconds":
-            return ms / ms2s;
-
-        case "m":
-        case "min":
-        case "mins":
-        case "minute":
-        case "minutes":
-            return ms / s2m;
-
-        case "h":
-        case "hour":
-        case "hours":
-            return ms / m2h;
-
-        case "d":
-        case "day":
-        case "days":
-            return ms / h2d;
-
-        default:
-            return {
-                milliseconds: _milliseconds,
-                seconds: _seconds,
-                minutes: _minutes,
-                hours: _hours,
-                days: _days,
-                toString: function() {
-                    return _stringFormatted;
-                },
-            };
-    }
-
-}
-
-function timer(time, update, complete) {
-
-    function Timer(t, u, c) {
-        var start = new Date().getTime();
-        var interval = setInterval(function() {
-            var now = t - (new Date().getTime() - start);
-            if (now <= 0) {
-                clearInterval(interval);
-                if (typeof c === "function") {
-                    c();
-                }
-            } else if (typeof u === "function") {
-                u(Math.floor(now / 1000));
-
-            }
-        }, 100); // the smaller this number, the more accurate the timer will be
-        this.clearTimer = function clearTimer() {
-            clearInterval(interval);
-        };
-    }
-    return new Timer(time, update, complete);
-}

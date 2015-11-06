@@ -228,7 +228,16 @@ function golden_retriever(name) {
         return deferred.promise;
     }
 
+    /**
+     * this currently doesnt take in account of maxScore changing
+     * add, if maxScore diff, rescale base on high maxScore, than output accordingly
+     */
     function _is_first_record_score_better_than_2nd_one(newScore, oldScore, strictly) {
+
+        if(oldScore.maxScore < newScore.maxScore){
+            console.log("New record has a higher max score -> use it");
+            return true;
+        }
 
         if (strictly) {
             return newScore.score > oldScore.score && newScore.percent > oldScore.percent;

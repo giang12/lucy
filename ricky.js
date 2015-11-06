@@ -3,8 +3,9 @@
 require("string_score");
 var leven = require('leven');
 var Q = require('q');
+var make = require('./lib/make.js');
 
-var _compare =  null;
+var _compare = null;
 /**
  * Responsible for searching youtube
  * @param {[type]} name    [his name]
@@ -25,23 +26,24 @@ var _compare =  null;
  */
 function _defaultCompare(newScore, oldScore, strictly) {
 
-        if (strictly) {
-            return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
-        }
-        return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
+    if (strictly) {
+        return newScore.score > oldScore.score && newScore.percent > oldScore.percent;
+    }
+    return newScore.score >= oldScore.score && newScore.percent >= oldScore.percent;
 }
+
 function Ricky(compare, tube, name) {
 
     var self = this;
     self.name = name || ("Ricky<" + Math.random().toString() + ">");
     self.tube = tube;
-    if(typeof compare !== "function"){
+    if (typeof compare !== "function") {
         console.log("No compare function supplied, using default");
         _compare = _defaultCompare;
-    }else{
+    } else {
         _compare = compare;
     }
-    
+
     return self;
 }
 Ricky.prototype.changeTube = function(tube) {
@@ -76,7 +78,7 @@ Ricky.prototype.search_your_tube = function(_song_) {
     var order = _whichOrder();
     var query = _makeQuery(_song_);
 
-    console.log(self.name, "is searching for", _song_.id , "a.k.a", query ,"(orderBY", order,")");
+    console.log(self.name, "is searching for", _song_.id, "a.k.a", query, "(orderBY", order, ")");
 
     self.tube.search.list({
             part: 'snippet',
@@ -116,7 +118,14 @@ function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit,
 
     var score = 0;
     var percent = 0;
-    var total = 21;//my age rn btw lol, feel old yet // 6 boos + 1 simi + 3 namescore + 3 chanel score + 8 statsscore excludde invertedOrderScore
+    /**
+     * Score History:
+     * a) 13: only use keywords
+     * b) 21: added stats (viewcount, likecount....)
+     * c) 27: added stats perday(view count, likecount)
+     * @type {Number}
+     */
+    var total = 27;
 
     //best right best 2
     score += nameInTitle ? 1 : -1;
@@ -141,7 +150,7 @@ function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit,
 
     score += nameInTitleScore; //max 3
     score += channelScore; //max 3
-    score += statsScore; //max 8
+    score += statsScore; //max 14
 
     score *= invertedOrderScore;
 
@@ -156,38 +165,39 @@ function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit,
     };
 }
 
-function _calculateStatScore(statsObj) {
+function _calculateStatScore(statsObj, publishedDate) {
 
     var ret = {
         viewCount: 0,
+        viewCount_perday: 0,
         likeCount: 0,
+        likeCount_perday: 0,
         dislikeCount: 0,
         favoriteCount: 0,
         commentCount: 0,
-        score: 0 //Max 8
+        score: 0 //Max 14
     };
-
     if (typeof statsObj === 'undefined') {
         return ret;
     }
 
     ret.dislikeCount = (typeof statsObj.dislikeCount !== 'undefined') ? parseInt(statsObj.dislikeCount, 10) : 0;
 
-
     ret.viewCount = ((typeof statsObj.viewCount !== 'undefined') ? parseInt(statsObj.viewCount, 10) : 0) - ret.dislikeCount;
-
     ret.likeCount = ((typeof statsObj.likeCount !== 'undefined') ? parseInt(statsObj.likeCount, 10) : 0) - ret.dislikeCount;
 
     ret.favoriteCount = (typeof statsObj.favoriteCount !== 'undefined') ? parseInt(statsObj.favoriteCount, 10) : 0;
     ret.commentCount = (typeof statsObj.commentCount !== 'undefined') ? parseInt(statsObj.commentCount, 10) : 0;
 
-    var viewCountThres = 500000;
-    var likeCountThres = 12000;
-    var favoriteThres = 1200;
-    var commentThres = 120;
+    var viewCountThres  = 1200000; //1.2mill
+    var likeCountThres  = 12000; //12k
+    var favoriteThres   = 1200;
+    var commentThres    = 120;
+
+    var viewCount_perdayThres = 500000; //500k
+    var likeCount_perdayThres = 5000; //5k
 
     if (ret.viewCount > 0) {
-
         ret.score += ret.viewCount > viewCountThres ? 3 : (1 / viewCountThres) * ret.viewCount * 3; //Max 3
     }
 
@@ -195,11 +205,22 @@ function _calculateStatScore(statsObj) {
 
         ret.score += ret.likeCount > likeCountThres ? 3 : (1 / likeCountThres) * ret.likeCount * 3; //Max 3
     }
+    try {
+        var dayDiff = make.timeDiff(new Date(publishedDate), new Date(), 'd');
+        ret.viewCount_perday = ret.viewCount / dayDiff; 
+        ret.likeCount_perday = ret.likeCount / dayDiff;
+
+        ret.score += ret.viewCount_perday > viewCount_perdayThres ? 3 : (1 / viewCount_perdayThres) * ret.viewCount_perday * 3; //Max 3
+        ret.score += ret.likeCount_perday > likeCount_perdayThres ? 3 : (1 / likeCount_perdayThres) * ret.likeCount_perday * 3; //Max 3
+
+    } catch (e) {
+        //date is invalid, no bonus point for you
+        console.log(e);
+    }
 
     ret.score += ret.favoriteCount > favoriteThres ? 1 : (1 / favoriteThres) * ret.favoriteCount; //Max 1
 
     ret.score += ret.commentCount > commentThres ? 1 : (1 / commentThres) * ret.commentCount; //Max 1
-
     return ret;
 }
 
@@ -223,7 +244,7 @@ function _tubeHandler(_ricky_, _track_, res) {
     //the sperms showndown
     var suppaWilly = null;
     var suppaWillyScore = {
-        maxScore: 26,
+        maxScore: -999999999,
         score: -999999999, //bigger better
         percent: 0,
     };
@@ -285,12 +306,11 @@ function _tubeHandler(_ricky_, _track_, res) {
         }
         var invertedOrderScore = (spermsTotal - pos) / spermsTotal; //Max 1
 
-        var stats = _calculateStatScore(data.items[0].statistics); //Max 8
+        var stats = _calculateStatScore(data.items[0].statistics, video.published); //Max 8
 
-        //Max 21 (exclude invertedOrderScore only use for scaling)
         var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
 
-         //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
+        //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
 
         if (nameInTitle || (nameInTitleScore > 0.95)) {
 

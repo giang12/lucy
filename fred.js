@@ -423,7 +423,8 @@ Fred.prototype.save_the_baby = function(_newborn_) {
                 console.log(my.name, "is saving track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
                 return _hand_over(my, deferred, _newborn_);
             }
-    );
+    ).done();
+
     return deferred.promise;
 };
 
