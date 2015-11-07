@@ -1,0 +1,18 @@
+[
+    {
+        // Lucy
+        "uid": "Lucy",
+        "script": "lucy.js",
+        "append": true,
+        "watch": true,
+        "path": "./",
+        "sourceDir": "./",
+        "logFile": ".logs/4ever-log.log",
+        "outFile": ".logs/4ever-out.log",
+        "errFile": ".logs/4ever-err.log"
+    }
+    //place holder for convertor
+    //place holder for streamer
+    //place holder for janitor
+    //place holder for updater
+]

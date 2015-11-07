@@ -1,0 +1,9 @@
+**/.4ever/**
+**/.logs/**
+**/config/**
+**/config-example/**
+**/ffmpeg/**
+**/node_modules/**
+**/vaults/**
+**.sublime**
+**/.git/**

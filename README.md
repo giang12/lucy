@@ -1,3 +1,4 @@
+##HOW IS THIS OUTDATED ALREADY? WUUUHHHTTTTTT >o<##
 # lucy 
 
 [https://www.youtube.com/watch?v=iGmMrCsGoeo](https://www.youtube.com/watch?v=iGmMrCsGoeo)
@@ -25,7 +26,7 @@
 
 ./vault/track_audio/ store mp3 files
 
-./vault/track_Video/ store mp4 files //disabled
+./vault/track_Video/ store mp4 files
 
 #TODO:
 -Sync PLaylists
