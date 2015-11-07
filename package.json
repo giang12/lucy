@@ -40,6 +40,7 @@
     "opn": "^3.0.2",
     "progress-stream": "^1.1.1",
     "q": "^1.4.1",
+    "request": "^2.65.0",
     "spotify-web-api-node": "^2.1.0",
     "string_score": "^0.1.22",
     "youtube-api": "^1.2.1",
