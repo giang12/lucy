@@ -916,9 +916,9 @@ app.get('/index', function(req, res) {
 
             ret.push(Lucy.talk_or_listen(true));
             ret.push("<br>Hey there " + User.info.display_name + ", you need to go in " + make.formatTime((new Date(User.expires_at)) - (new Date())) + " @ " + make.formatDate(User.expires_at) );
-            ret.push("<br><br>Vault Address @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + (Lucy.where_is_your_vault()) + " </a>");
+            ret.push("<br>Home @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + (Lucy.where_is_your_vault()) + " </a>");
 
-            ret.push('<center><br><br><input style="width: 80%; height:50px; font-size:24px;" id="searchBox" type="text" name="spotify:track:43wtbrVn3ZSN8sz5MLgg4C or 43wtbrVn3ZSN8sz5MLgg4C or searchTerm" value="">');
+            ret.push('<center><br><br><input style="width: 80%; height:50px; font-size:24px;" id="searchBox" type="text" placeholder="song artist" value="">');
             ret.push('<br><br><input onclick=search() style="width: 30%; height:45px; font-size:24px;" type="submit" value="Search"></center>');
 
             ret.push("<pre>Access_Token:<br> " + User.access_token);
@@ -936,8 +936,8 @@ app.get('/index', function(req, res) {
         }, function(err) {
             ret.push("Hi, I'm Lucy, who are you? => <a href=login>Login</a>");
             ret.push("<br><br>" + Lucy.talk_or_listen(true));
-            ret.push("<br>Vault Address @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + (Lucy.where_is_your_vault()) + " </a>");
-            ret.push('<center><br><br><input style="width: 80%; height:50px; font-size:24px;" id="searchBox" type="text" name="spotify:track:43wtbrVn3ZSN8sz5MLgg4C or 43wtbrVn3ZSN8sz5MLgg4C or searchTerm" value="">');
+            ret.push("<br>Home @ <a onclick='window.location.href='/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l';return false;' href=/vault/" + encodeURIComponent(Lucy.where_is_your_vault()) + "/l>➥" + (Lucy.where_is_your_vault()) + " </a>");
+            ret.push('<center><br><br><input style="width: 80%; height:50px; font-size:24px;" id="searchBox" type="text" placeholder="song artist" value="">');
             ret.push('<br><br><input onclick=search() style="width: 30%; height:45px; font-size:24px;" type="submit" value="Search"></center>');
             ret.push("<script>function search() {window.location = '/search/' + document.getElementById('searchBox').value};</script>");
             res.send(ret.join(""));
