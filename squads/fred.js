@@ -362,7 +362,7 @@ function _hand_over(my, _mom_, _newborn_) {
             _mom_.reject(new Error(error));
         })
         .on("progress", function(task) {
-            if (task.progress.percentage - percentage < 5) return;
+            if (task.progress.percentage === percentage) return;
             console.log("Download Updates:", JSON.stringify(task, null, 2));
             percentage = task.progress.percentage;
         });
