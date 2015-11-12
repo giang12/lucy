@@ -1,5 +1,6 @@
 **/.4ever/**
 **/.logs/**
+**/.tmp/**
 **/config/**
 **/config-example/**
 **/ffmpeg/**
@@ -7,3 +8,4 @@
 **/vaults/**
 **.sublime**
 **/.git/**
+*.md

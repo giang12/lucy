@@ -37,7 +37,7 @@
     "jsonfile": "^2.2.3",
     "leven": "^2.0.0",
     "node-cache": "^3.0.0",
-    "opn": "^3.0.2",
+    "opn": "^3.0.3",
     "progress-stream": "^1.1.1",
     "q": "^1.4.1",
     "request": "^2.65.0",
@@ -45,7 +45,7 @@
     "string_score": "^0.1.22",
     "youtube-api": "^1.2.1",
     "youtube-mp3-downloader": "^0.3.5",
-    "ytdl-core": "^0.7.0"
+    "ytdl-core": "^0.7.6"
   },
   "optionalDependencies": {},
   "bugs": {

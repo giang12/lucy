@@ -11,12 +11,16 @@ var jsonfile = require('jsonfile');
 var Q = require('q');
 
 
+var cwd = process.cwd();
+var credentialsConfig = require(cwd + "/config/credentials.json");
+
 function Ethel(name) {
 
     var self = this;
     self.name = name || ("Ethel<" + Math.random().toString() +">");
-    self.credentials = require("./config/credentials.json").spotifyWebApi;
-    self.scopes = require("./config/credentials.json").spotify_scopes;
+
+    self.credentials = credentialsConfig.spotifyWebApi;
+    self.scopes = credentialsConfig.spotify_scopes;
     
     return self;
 }
@@ -26,7 +30,7 @@ Ethel.prototype.getMe = function() {
     var deferred = Q.defer();
     var self = this;
 
-    jsonfile.readFile("./config/user.json", function(err, obj) {
+    jsonfile.readFile(cwd + "/config/user.json", function(err, obj) {
 
         if (err) {
             deferred.reject(new Error(err));
@@ -56,7 +60,7 @@ Ethel.prototype.setAccessTokens = function(spotifyApi) {
 
     var deferred = Q.defer();
 
-    jsonfile.readFile("./config/user.json", function(err, obj) {
+    jsonfile.readFile(cwd + "/config/user.json", function(err, obj) {
 
         if (err) {
             deferred.reject(new Error(err));
