@@ -245,19 +245,19 @@ function _dedup_search_results(_promisedResults_){
 /**
  * down here are the picking majic stuff, refactor when have time
  */
+/**
+ * Score History:
+ * a) 13: only use keywords
+ * b) 21: added stats (viewcount, likecount....)
+ * c) 27: added stats perday(view count, likecount)
+ * @type {Number}
+ */
+var MAX_SCORE = 27;
 
 function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
 
     var score = 0;
     var percent = 0;
-    /**
-     * Score History:
-     * a) 13: only use keywords
-     * b) 21: added stats (viewcount, likecount....)
-     * c) 27: added stats perday(view count, likecount)
-     * @type {Number}
-     */
-    var total = 27;
 
     //best right best 2
     score += nameInTitle ? 1 : -1;
@@ -286,12 +286,11 @@ function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit,
 
     score *= invertedOrderScore;
 
-    percent = Math.round((score / total) * 1000) / 1000;
-    total = Math.round(total * 1000) / 1000;
+    percent = Math.round((score / MAX_SCORE) * 1000) / 1000;
     score = Math.round(score * 1000) / 1000;
 
     return {
-        maxScore: total,
+        maxScore: MAX_SCORE,
         score: score,
         percent: percent
     };
@@ -376,7 +375,7 @@ function _pick_best_match(_ricky_, _track_, _results_) {
     //the sperms showndown
     var suppaWilly = null;
     var suppaWillyScore = {
-        maxScore: -999999999,
+        maxScore: MAX_SCORE,
         score: -999999999, //bigger better
         percent: 0,
     };

@@ -32,7 +32,10 @@ module.exports = function(Lucy, req, res) {
         }
         total = tracks.length;
         var trackList = [];
-        trackList.push('<ol id="track-list" type="1">');
+        trackList.push('<br><br><div id="vault_items">');
+        trackList.push('<input style="min-width: 200px; width: 35%; height:35px; font-size:16px;" class="search" placeholder="Filter" />');
+    
+        trackList.push('<ol class="list" id="track-list" type="1">');
         if (orderBy === "l" || orderBy === "c") {
             tracks = tracks.map(function(v) {
                 return {
@@ -50,12 +53,14 @@ module.exports = function(Lucy, req, res) {
         tracks.forEach(function(elm, index, arr) {
             if (!/^\..*/.test(elm)) {
                 var params = encodeURIComponent(req.params.vaultAdd) + "/" + encodeURIComponent(elm) + "/" + encodeURIComponent(_get_req_url(req));
-                trackList.push("<li><a onclick='window.location.href='/track/" + params + "';return false;' href=/track/" + params + ">➥" + elm + " </a></li><br>");
+                trackList.push("<li><a class='name' onclick='window.location.href='/track/" + params + "';return false;' href=/track/" + params + ">➥" + elm + " </a></li><br>");
             } else {
                 total--;
             }
         });
         trackList.push("</ol>");
+        trackList.push('</div>');
+
         var aTag = "onclick='window.location.href='/vault/" + encodeURIComponent(req.params.vaultAdd) + "';return false;' href=/vault/" + encodeURIComponent(req.params.vaultAdd);
         var aCommand = orderBy === 'a' ? "class=active>➥" : (aTag + "/a>");
         var Lcommand = orderBy === 'l' ? "class=active>➥" : (aTag + "/l>");
@@ -63,12 +68,14 @@ module.exports = function(Lucy, req, res) {
 
         ret.push("<br>There are <b>" + total + "</b> tracks in vault orderBy <a " + aCommand + "Alphabet</a> | <a " + Lcommand + "Lastest</a> | <a " + Ccommand + "Chronological</a>");
         ret = ret.concat(trackList);
+        ret.push('<script src="http://listjs.com/no-cdn/list.js"></script>');
         ret.push(
             "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
             "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
             "addStyleString('#track-list{ height:80%; width:90%; overflow-y:auto; overflow-x:hidden}');" +
             "</script>"
         );
+        ret.push('<script>var vaultList = new List("vault_items", {valueNames: [ "name"]});</script>');
         return res.send(ret.join(""));
     });
 
