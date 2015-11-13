@@ -10,7 +10,7 @@ var Youtube = require("youtube-api"),
     Opn = require("opn");
 var Q = require('q');
 var existsSync = require('exists-sync');
-
+var make = require('./lib/make.js');
 var Ricky = require('./ricky.js');
 var Fred = require('./fred.js');
 var Ethel = require('./ethel.js');
@@ -324,9 +324,33 @@ var Lucy = (function() {
     }
 
     function check_vault(trackID) {
+
+        var _startTime = new Date();
         //trackID must is spotify ID for now, i know limitation, chillout i got this  later
-        return vaultKeeper.check_vault(Youtube, trackID);
+        //see I told you, search by human languaes now
+        var done = vaultKeeper.check_vault(Youtube, trackID);
+
+        done.then(
+            function _check_vault_success(_ret_){
+                var msg = new Date() + ": _check_vault_success for " + trackID + " took " + make.timeDiff(new Date(), _startTime, 's') + " seconds";
+                return _check_vault_log(msg);
+            }
+            ,function _check_vault_err(reason){
+
+                var msg = new Date() + ": _check_vault_err for " + trackID + " took " + make.timeDiff(new Date(), _startTime, 's') + " seconds \r\n";
+                msg += "Reason: " + reason;
+                return _check_vault_log(msg);
+            });
+
+        return done;
     }
+    function _check_vault_log(msg){
+
+        fs.appendFile(cwd + '/.logs/lucy_check_vault-time.log', msg + "\r\n", function (err) {
+            if(!err) return;
+            console.log("fail to log request", err);
+        });
+    }   
 
     return {
         name: name,

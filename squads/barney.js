@@ -2,7 +2,10 @@
 
 var expressIO = require('express.io');
 var fs = require('fs-extra');
-
+var bodyParser = require('body-parser');
+var logger = require('morgan');
+var compression = require('compression');
+var methodOverride = require('method-override');
 var Ethel = require('./ethel.js');
 
 var PORT = process.env.PORT || 8888;
@@ -42,6 +45,17 @@ var Barney = (function() {
     }
     my.app = expressIO();
 
+
+    my.app.use(compression());
+    my.app.use(methodOverride('X-HTTP-Method'))          // Microsoft
+    my.app.use(methodOverride('X-HTTP-Method-Override')) // Google/GData
+    my.app.use(methodOverride('X-Method-Override'))      // IBM
+    my.app.use(logger(':remote-addr @ [:date] :status :response-time ":method :url HTTP/:http-version"  ":referrer" ":user-agent"', {
+      stream: fs.createWriteStream(cwd + '/.logs/http-serve.log', {'flags': 'a'})
+    }));
+    my.app.use(bodyParser.json());
+    my.app.use(bodyParser.urlencoded({ extended: false }));
+
     my.awesomeness = {
     	comeAlive: _I_love_everything_about,
     	trueStory: my.trueStory,
@@ -51,12 +65,6 @@ var Barney = (function() {
 
     //all get middleware
     function _getCB(req, res) {
-
-    	var rprt = req.ip + " @ " + new Date() + "=> " + req.protocol + '://' + req.get('host') + req.originalUrl;
-        fs.appendFile(cwd+ '/.logs/http-get.log', rprt + "\r\n", function (err) {
-        	if(!err) return;
-        	console.log("fail to log request", err);
-		});
 
         var key = req.route.path;
         var getRoutes = my.routes.get;

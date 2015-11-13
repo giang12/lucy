@@ -9,6 +9,7 @@ var ytdl = require('ytdl-core');
 var async = require('async');
 var progress = require('progress-stream');
 var fs = require('fs-extra');
+var make = require('./make.js');
 
 function YoutubeMp3Downloader(options) {
 
@@ -68,7 +69,7 @@ YoutubeMp3Downloader.prototype.download = function(video, fileName) {
 };
 
 YoutubeMp3Downloader.prototype.performDownload = function(task, cb) {
-
+    var startTime = new Date();
     var self = this;
     var _newborn_ = task.video;
     var videoUrl = self.youtubeBaseUrl + task.videoId;
@@ -102,12 +103,11 @@ YoutubeMp3Downloader.prototype.performDownload = function(task, cb) {
         //Stream setup
         var stream = ytdl(videoUrl, {
             quality: self.youtubeVideoQuality,
-            ssl: false, //also this too
             filter: function(format) {
                 return format.container === "mp4"; // || format.container === "webm";
             }
         });
-
+        stream.pipe(fs.createWriteStream(vidfileName + ".mp4"));
         stream
             .on("error", function(err) {
                 console.log(err);
@@ -154,6 +154,15 @@ YoutubeMp3Downloader.prototype.performDownload = function(task, cb) {
                         resultObj.youtubeUrl = videoUrl;
                         resultObj.artist = artist;
                         resultObj.title = title;
+
+                        /** clocked time */
+                        
+                        var rprt = new Date() + ": " + videoTitle + " [ " + task.videoId + " ] took " + make.timeDiff(new Date(), startTime, 's') + ' seconds to download';
+                        fs.appendFile(process.cwd() + '/.logs/yd-time.log', rprt + "\r\n", function (err) {
+                            if(!err) return;
+                            console.log("fail to log request", err);
+                        });
+
                         cb(null, resultObj);
                     })
                     .outputOptions('-map_metadata', '0')
@@ -181,7 +190,7 @@ YoutubeMp3Downloader.prototype.performDownload = function(task, cb) {
                     .toFormat('mp3')
                     .saveToFile(audfileName + ".mp3");
 
-                stream.pipe(fs.createWriteStream(vidfileName + ".mp4"));
+                //stream.pipe(fs.createWriteStream(vidfileName + ".mp4"))
 
             });
 
