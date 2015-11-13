@@ -488,26 +488,26 @@ function _pick_best_match(_ricky_, _track_, _results_) {
 
         var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
 
-        //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
+        //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"], tempScore);
 
-        //if (nameInTitle || (nameInTitleScore > 0.95)) {
+        if (nameInTitle || (nameInTitleScore > 0.95) || tempScore.percent > .49) {
 
         //console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
 
-        var shouldUseNewResult = true;
+            var shouldUseNewResult = true;
 
-        /** if two scores are equal pick the one that match duration best */
-        if (tempScore.score === suppaWillyScore.score) {
-            var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
-            shouldUseNewResult = (timeDiff < currTimeDiff);
-            //console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
-        }
+            /** if two scores are equal pick the one that match duration best */
+            if (tempScore.score === suppaWillyScore.score) {
+                var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
+                shouldUseNewResult = (timeDiff < currTimeDiff);
+                //console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
+            }
 
-        if (_compare(tempScore, suppaWillyScore) && shouldUseNewResult) {
-            suppaWillyScore = tempScore;
-            suppaWilly = video;
+            if (_compare(tempScore, suppaWillyScore) && shouldUseNewResult) {
+                suppaWillyScore = tempScore;
+                suppaWilly = video;
+            }
         }
-        //}
 
 
         return {
