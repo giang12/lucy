@@ -4,6 +4,7 @@ require("string_score");
 var leven = require('leven');
 var Q = require('q');
 var make = require('./lib/make.js');
+var Cache = require("node-cache");
 
 var _compare = null;
 /**
@@ -52,6 +53,42 @@ Ricky.prototype.changeTube = function(tube) {
     self.tube = tube;
     return self;
 };
+
+
+/**
+ * We set cache on successful tube checking 
+ * because when we have a match, it is least likely to change to some time
+ * at least for some live stats to change
+ */
+//search_your_tube cache
+//query is key
+//Store Willy {video:,score:}
+var Eva = new Cache({
+        stdTTL      : 24 * 60 * 60, //24 hours,
+        checkperiod : 1 * 60 * 60,
+        useClones   : true
+    })
+    .on("set", function(key, value) {
+        // ... do something ...   
+        console.log("Eva cache", key);
+        console.log("For the functioning of search_your_tube", "Stat:", Eva.getStats());
+    })
+    .on("del", function(key, value) {
+        // ... do something ...   
+        console.log("Eva del", key, "from search_your_tube cache");
+        console.log("Stat: ", Eva.getStats());
+    })
+    .on("expired", function(key, value) {
+        // ... do something ...   
+        console.log(key, "in search_your_tube cache expired");
+        console.log("Stat: ", Eva.getStats());
+    })
+    .on("flush", function() {
+        // ... do something ...   
+        console.log("Eva flushed the cache for search_your_tube");
+        console.log("Stat: ", Eva.getStats());
+    });
+
 /**
  * [search_your_tube description]
  * @param  {[type]} _track_ [description]
@@ -82,12 +119,21 @@ Ricky.prototype.changeTube = function(tube) {
  * @return {[type]}         [description]
  */
 Ricky.prototype.search_your_tube = function(_song_) {
-
+    //check cache before committing to deep shit or search lol
+    var query = _makeQuery(_song_);
     var self = this;
+
+    var cache_willy = Eva.get(query);
+    if (cache_willy !== undefined) {
+
+        console.log(self.name, "found a cache for", _song_.id, "matched to", cache_willy.title, cache_willy.urlLong);
+        
+        return Q.resolve(cache_willy);
+    }
+
     var deferred = Q.defer();
 
     var orders = ["relevance", "viewCount", "rating"];
-    var query = _makeQuery(_song_);
 
     console.log(self.name, "is about to search for", _song_.id, "a.k.a", query);
 
@@ -97,10 +143,20 @@ Ricky.prototype.search_your_tube = function(_song_) {
     });
 
     _dedup_search_results(_aggregatedResults)
-        .then(function(data){
+        .then(function(data) {
 
-            console.log(self.name, "is picking best match for", _song_.id, "a.k.a", query, "from", data.uniqCount, "unique result(s)[outOf", data.origCount, "]" );
-            deferred.resolve(_pick_best_match(self, _song_, data.uniqResult));
+            console.log(self.name, "is picking best match for", _song_.id, "a.k.a", query, "from", data.uniqCount, "unique result(s)[outOf", data.origCount, "]");
+            _pick_best_match(self, _song_, data.uniqResult)
+                .then(
+                    function _foundWilly(Willy) {
+
+                        Eva.set(query, Willy);
+                        deferred.resolve(Willy);
+
+                    }, function _noWill(reason) {
+
+                        deferred.reject(reason);
+                    }).done();
         }).done();
     
     return deferred.promise;
@@ -379,7 +435,7 @@ function _pick_best_match(_ricky_, _track_, _results_) {
                 suppaWilly.score = suppaWillyScore;
                 deferred.resolve(suppaWilly);
             }
-        });
+        }).done();
 
 
     function _fuckfakerism(video, pos, data) {

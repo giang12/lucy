@@ -180,12 +180,12 @@ var Ely = new Cache({
     })
     .on("del", function(key, value) {
         // ... do something ...   
-        console.log("Ely del", key);
+        console.log("Ely del", key, "from vault check cache");
         console.log("Stat: ", Ely.getStats());
     })
     .on("expired", function(key, value) {
         // ... do something ...   
-        console.log(key, "in vault cache check expired");
+        console.log(key, "in vault check cache expired");
         console.log("Stat: ", Ely.getStats());
     })
     .on("flush", function() {
@@ -202,15 +202,15 @@ var Ely = new Cache({
 Fred.prototype.check_vault = function(_tube_, _trackID_) {
 
     //check cache before committing to deep shit or search lol
-    var cache_value = Ely.get(_trackID_);
+    var cache_newborn_ = Ely.get(_trackID_);
+    var my = this;
 
-    if (cache_value !== undefined) {
+    if (cache_newborn_ !== undefined) {
 
-        console.log("Fred found a cache for", _trackID_, "matching to", cache_value.song.title, "-", cache_value.song.artist);
-        return Q.resolve(cache_value);
+        console.log(my.name, "found a cache for", _trackID_, "matching to", cache_newborn_.song.title, "-", cache_newborn_.song.artist);
+        return Q.resolve(cache_newborn_);
     }
     var deferred = Q.defer();
-    var my = this;
 
     if (!my.vaultIsOpen) {
 
@@ -299,7 +299,7 @@ var ZaPa = new Cache({
     })
     .on("del", function(key, value) {
         // ... do something ...   
-        console.log("ZaPa removed", key);
+        console.log("ZaPa removed", key, "from downloading Q");
         console.log("Stat: ", ZaPa.getStats());
     })
     .on("expired", function(key, value) {
@@ -415,7 +415,7 @@ Fred.prototype.save_the_baby = function(_newborn_) {
                 }
                 //new one is better than old one, update it
                 console.log(my.name, "is updating track:", _newborn_["song"]["title"], "(" + _newborn_["song"]["id"] + ") matched to YT ID:", _newborn_["youtube"]["title"], "(" + _newborn_["youtube"]["urlShort"] + " | " + _newborn_["youtube"]["channelTitle"] + ") | SCORE:", _newborn_["youtube"].score);
-                 console.log("Old Track:", obj["song"]["title"], "(" + obj["song"]["id"] + ") matched to YT ID:", obj["youtube"]["title"], "(" + obj["youtube"]["urlShort"] + " | " + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
+                console.log("Old Track:", obj["song"]["title"], "(" + obj["song"]["id"] + ") matched to YT ID:", obj["youtube"]["title"], "(" + obj["youtube"]["urlShort"] + " | " + obj["youtube"]["channelTitle"] + ") | SCORE:", obj["youtube"].score);
                 return _hand_over(my, deferred, _newborn_);
                 
             },
