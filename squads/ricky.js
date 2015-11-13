@@ -85,30 +85,24 @@ Ricky.prototype.search_your_tube = function(_song_) {
 
     var self = this;
     var deferred = Q.defer();
-    //console.log(_song_);
-    var order = _whichOrder();
+
+    var orders = ["relevance", "viewCount", "rating"];
     var query = _makeQuery(_song_);
 
-    console.log(self.name, "is searching for", _song_.id, "a.k.a", query, "(orderBY", order, ")");
+    console.log(self.name, "is about to search for", _song_.id, "a.k.a", query);
 
-    self.tube.search.list({
-            part: 'snippet',
-            type: 'video',
-            q: query,
-            maxResults: 50,
-            order: order, //viewCount relevance rating
-            //safeSearch: 'moderate',
-            videoEmbeddable: true
-        },
-        function(err, res) {
-            if (err) {
-                deferred.reject(new Error(err));
-            } else {
-                deferred.resolve(_tubeHandler(self, _song_, res));
-            }
-        }
-    );
+    var _aggregatedResults = [];
+    orders.forEach(function(_order_){
+        _aggregatedResults.push(_search_by_order(self, query, _order_));
+    });
 
+    _dedup_search_results(_aggregatedResults)
+        .then(function(data){
+
+            console.log(self.name, "is picking best match for", _song_.id, "a.k.a", query, "from", data.uniqCount, "unique result(s)[outOf", data.origCount, "]" );
+            deferred.resolve(_pick_best_match(self, _song_, data.uniqResult));
+        }).done();
+    
     return deferred.promise;
 };
 
@@ -120,10 +114,81 @@ function _makeQuery(_song_) {
     return _song_.title + " + " + _song_.artist;
 }
 
-function _whichOrder() {
-    //'relevance' : 'viewCount' : rating
-    return (Math.random() < 0.5 ? 'relevance' : 'viewCount');
+function _search_by_order(self, _query_, _order_) {
+    
+    var deferred = Q.defer();
+
+    console.log(self.name, "is searching for", _query_, "(orderBY", _order_, ")");
+
+    self.tube.search.list({
+            part: 'snippet',
+            type: 'video',
+            q: _query_,
+            maxResults: 50,
+            order: _order_, //viewCount relevance rating
+            //safeSearch: 'moderate',
+            videoEmbeddable: true
+        },
+        function(err, res) {
+            if (err) {
+                deferred.reject(new Error(err));
+            } else {
+                deferred.resolve(res.items);
+            }
+        }
+    );
+
+    return deferred.promise;
 }
+
+/**
+ * [_dedup_search_results description]
+ * @param  {[type]} _origResults_ [array of promised results]
+ * @return deferred.resolve({
+ *              origCount: _totalItems,
+ *              uniqCount: _dedupedResults.length,
+ *              uniqResult: _dedupedResults
+ *           })               
+ *   [description]
+ */
+function _dedup_search_results(_promisedResults_){
+
+    var deferred = Q.defer();
+    var _tmp = [];
+    var _dedupedResults = [];
+    var _totalItems = 0;
+
+    Q.allSettled(_promisedResults_)
+        .then(function(results) {
+            results.forEach(function(result) {
+
+                if (result.state === "fulfilled") {
+
+                    _totalItems += result.value.length;
+                    result.value.forEach(function(item){
+                        //filter out duped item
+                        if(_tmp.indexOf(item.id.videoId) < 0){
+                            _tmp.push(item.id.videoId);
+                            _dedupedResults.push(item);
+                        }
+                    });
+                }
+            });
+            return deferred.resolve({
+                origCount: _totalItems,
+                uniqCount: _dedupedResults.length,
+                uniqResult: _dedupedResults
+            });
+        }).done();
+
+    return deferred.promise;
+
+}
+
+
+/**
+ * down here are the picking majic stuff, refactor when have time
+ */
 
 function _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, statsScore, invertedOrderScore) {
 
@@ -244,7 +309,7 @@ function _standardizeString(str) {
 }
 
 
-function _tubeHandler(_ricky_, _track_, res) {
+function _pick_best_match(_ricky_, _track_, _results_) {
 
     if (typeof _ricky_.tube !== 'function') {
 
@@ -260,7 +325,7 @@ function _tubeHandler(_ricky_, _track_, res) {
         percent: 0,
     };
 
-    var spermsTotal = res.items.length;
+    var spermsTotal = _results_.length;
 
     if (spermsTotal < 1) {
 
@@ -268,87 +333,8 @@ function _tubeHandler(_ricky_, _track_, res) {
         return Q.reject(new Error("hopeless pursue in the wilderness"));
     }
     console.log("spermsCount:", spermsTotal);
-
-
-    function _fuckfakerism(video, pos, data) {
-
-
-        if (data.items.length < 1) {
-
-            return new Error("Baby Doesnt Have Info Such as BirthDate(creation date)");
-        }
-
-        data.items[0].contentDetails.duration.replace(/PT(\d+)M(\d+)S/, function(t, m, s) {
-            video.duration = ((parseInt(m, 10) * 60) + parseInt(s, 10)) * 1000; //unit in ms
-        });
-        video.definition = data.items[0].contentDetails.definition;
-
-        var timeDiff = Math.abs(video['duration'] - _track_['duration']);
-        var vidTitle = _standardizeString(video["title"]);
-        //laven score for vid title
-        var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["title"] + " official music video"), vidTitle);
-
-
-        //g1
-        var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["title"])) > -1;
-        var artistInTitle = vidTitle.indexOf(_standardizeString(_track_["artist"])) > -1;
-
-        //g2
-        var isAudio = vidTitle.indexOf("audio") > -1;
-        var isLyric = vidTitle.indexOf("lyric") > -1;
-        var isCredit = vidTitle.indexOf("credit") > -1;
-        var isLive = vidTitle.indexOf("live") > -1;
-        var isCover = (vidTitle.indexOf("cover") > -1) || (vidTitle.indexOf("react") > -1) || (vidTitle.indexOf("response") > -1);
-        var isTeaser = vidTitle.indexOf("teaser") > -1;
-
-        //g3
-        var isOfficial = vidTitle.indexOf("official") > -1;
-        var isMusic = vidTitle.indexOf("music") > -1;
-        var isVideo = vidTitle.indexOf("video") > -1;
-        var isExplicit = vidTitle.indexOf("explicit") > -1;
-
-        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["title"]), 1) * 3; //Max 3
-        var simiScore = (1 - (lavenD / 100)); //Max 1
-        var channelScore = 0; //Max 3
-
-        if (video["channelTitle"] !== "") {
-
-            channelScore = _standardizeString(video["channelTitle"]).score(_standardizeString(_track_["artist"]), 1) * 3;
-        }
-        var invertedOrderScore = (spermsTotal - pos) / spermsTotal; //Max 1
-
-        var stats = _calculateStatScore(data.items[0].statistics, video.published); //Max 8
-
-        var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
-
-        //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
-
-        if (nameInTitle || (nameInTitleScore > 0.95)) {
-
-            //   console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
-
-            var shouldUseNewResult = true;
-
-            if (tempScore.score === suppaWillyScore.score) {
-                var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
-                shouldUseNewResult = (timeDiff < currTimeDiff);
-                //console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
-            }
-            if (_compare(tempScore, suppaWillyScore) && shouldUseNewResult) {
-                suppaWillyScore = tempScore;
-                suppaWilly = video;
-            }
-        }
-
-
-        return {
-            video: video,
-            score: tempScore
-        };
-    }
-
     var collector = [];
-    res.items.forEach(function(result, pos) {
+    _results_.forEach(function(result, pos) {
 
         var each_data_deferred = Q.defer();
         //console.log(result);
@@ -395,6 +381,86 @@ function _tubeHandler(_ricky_, _track_, res) {
             }
         });
 
-    return deferred.promise;
 
+    function _fuckfakerism(video, pos, data) {
+
+
+        if (data.items.length < 1) {
+
+            return new Error("Baby Doesnt Have Info Such as BirthDate(creation date)");
+        }
+
+        data.items[0].contentDetails.duration.replace(/PT(\d+)M(\d+)S/, function(t, m, s) {
+            video.duration = ((parseInt(m, 10) * 60) + parseInt(s, 10)) * 1000; //unit in ms
+        });
+        video.definition = data.items[0].contentDetails.definition;
+
+        var timeDiff = Math.abs(video['duration'] - _track_['duration']); //may use timeDiff as one of the scoring thing
+        var vidTitle = _standardizeString(video["title"]);
+        //laven score for vid title
+        var lavenD = leven(_standardizeString(_track_["artist"] + " - " + _track_["title"] + " official music video"), vidTitle);
+
+
+        //g1
+        var nameInTitle = vidTitle.indexOf(_standardizeString(_track_["title"])) > -1;
+        var artistInTitle = vidTitle.indexOf(_standardizeString(_track_["artist"])) > -1;
+
+        //g2
+        var isAudio = vidTitle.indexOf("audio") > -1;
+        var isLyric = vidTitle.indexOf("lyric") > -1;
+        var isCredit = vidTitle.indexOf("credit") > -1;
+        var isLive = vidTitle.indexOf("live") > -1;
+        var isCover = (vidTitle.indexOf("cover") > -1) || (vidTitle.indexOf("react") > -1) || (vidTitle.indexOf("response") > -1);
+        var isTeaser = vidTitle.indexOf("teaser") > -1;
+
+        //g3
+        var isOfficial = vidTitle.indexOf("official") > -1;
+        var isMusic = vidTitle.indexOf("music") > -1;
+        var isVideo = vidTitle.indexOf("video") > -1;
+        var isExplicit = vidTitle.indexOf("explicit") > -1;
+
+        var nameInTitleScore = vidTitle.score(_standardizeString(_track_["title"]), 1) * 3; //Max 3
+        var simiScore = (1 - (lavenD / 100)); //Max 1
+        var channelScore = 0; //Max 3
+
+        if (video["channelTitle"] !== "") {
+
+            channelScore = _standardizeString(video["channelTitle"]).score(_standardizeString(_track_["artist"]), 1) * 3;
+        }
+        var invertedOrderScore = (spermsTotal - pos) / spermsTotal; //Max 1
+
+        var stats = _calculateStatScore(data.items[0].statistics, video.published); //Max 8
+
+        var tempScore = _calculateScore(nameInTitle, artistInTitle, isAudio, isLyric, isCredit, isLive, isCover, isTeaser, isOfficial, isMusic, isVideo, isExplicit, simiScore, nameInTitleScore, channelScore, stats.score, invertedOrderScore);
+
+        //console.log("nameInTitle:", nameInTitle, "nameInTitleScore:", nameInTitleScore, video["title"], video["channelTitle"], video["urlShort"]);
+
+        //if (nameInTitle || (nameInTitleScore > 0.95)) {
+
+        //console.log("tempScore:", tempScore, "channelScore:", channelScore, video["title"], video["channelTitle"], video["urlShort"]);
+
+        var shouldUseNewResult = true;
+
+        /** if two scores are equal pick the one that match duration best */
+        if (tempScore.score === suppaWillyScore.score) {
+            var currTimeDiff = Math.abs(suppaWilly['duration'] - _track_['duration']);
+            shouldUseNewResult = (timeDiff < currTimeDiff);
+            //console.log("shouldUseNewResult:", shouldUseNewResult, timeDiff, currTimeDiff);
+        }
+
+        if (_compare(tempScore, suppaWillyScore) && shouldUseNewResult) {
+            suppaWillyScore = tempScore;
+            suppaWilly = video;
+        }
+        //}
+
+
+        return {
+            video: video,
+            score: tempScore
+        };
+    }
+
+    return deferred.promise;
 }
+
