@@ -51,6 +51,9 @@ var Lucy = (function() {
     var awake = false;
     var dirty = false;
 
+    /** TEMP */
+    var currentlyListentoTrack = null;
+
     var soul = (function soul() {
 
         var spirit = null;
@@ -135,6 +138,7 @@ var Lucy = (function() {
             function(track_id) {
                 return check_vault(track_id).then(function(newSong) {
                     console.log(newSong.song.title, "-", newSong.song.artist, "(", newSong.song.id, ") is in", path.normalize(vaultAdd));
+                    currentlyListentoTrack = newSong;
                     //console.log(JSON.stringify(newSong, null, 2));
                 }, function(err) {
                     console.log('Fail to find anything about', track_id);
@@ -362,6 +366,10 @@ var Lucy = (function() {
         //to be removed
         where_is_your_vault: function() {
             return vaultAdd;
+        },
+        get_curr_listen: function(){
+
+            return currentlyListentoTrack;
         },
         do_you_have_this_track: check_vault
     };

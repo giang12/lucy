@@ -33,8 +33,9 @@ module.exports = function(Lucy, req, res) {
         total = tracks.length;
         var trackList = [];
         trackList.push('<br><br><div id="vault_items">');
-        trackList.push('<input style="min-width: 200px; width: 35%; height:35px; font-size:16px;" class="search" placeholder="Filter" />');
-    
+        trackList.push('<input style="min-width: 200px; width: 35%; height:35px; font-size:16px;" class="search" id="searchBox" placeholder="Filter" />');
+        trackList.push('&nbsp;&nbsp;<button onclick="this.disabled=true; search(this);" style="width: 15%; height:35px; font-size:14px;" value="Search">Search</button></center>');
+
         trackList.push('<ol class="list" id="track-list" type="1">');
         if (orderBy === "l" || orderBy === "c") {
             tracks = tracks.map(function(v) {
@@ -75,6 +76,7 @@ module.exports = function(Lucy, req, res) {
             "addStyleString('#track-list{ height:80%; width:90%; overflow-y:auto; overflow-x:hidden}');" +
             "</script>"
         );
+        ret.push("<script>function search(elm) { if (/^\s*$/.test(document.getElementById('searchBox').value)) {elm.disabled=false; return;} window.location = '/search/' + document.getElementById('searchBox').value };</script>");
         ret.push('<script>var vaultList = new List("vault_items", {valueNames: [ "name"]});</script>');
         return res.send(ret.join(""));
     });

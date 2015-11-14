@@ -39,7 +39,8 @@ var Barney = (function() {
     		'/search/:q' : ["Lucy", require('./routes/search.js')],
     		'/playback/:mediaFile': ["Lucy", require('./routes/playback.js')],
     		'/download/:vaultAdd/:trackName/:op' : [require('./routes/download.js')],
-    		'/index'		: ["Lucy", "Ethel", require('./routes/index.js')],
+    		'/index/:orderBy?'		: ["Lucy", "Ethel", require('./routes/index.js')],
+            '/foobar'       : ["Lucy", "Ethel", require('./routes/foobar.js')],
     		'*'				: [function(req, res) {res.redirect("/index");}],
     	}
     }
