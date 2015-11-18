@@ -68,13 +68,7 @@ module.exports = function(Lucy, req, res) {
             "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
             "</script>"
         );
-
-        ret.push(
-            "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
-            "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
-            "addStyleString('#vid{margin:0; padding:0;height=55%; width=90% overflow:auto; background-color:blue}');" +
-            "</script>"
-        );
+        
         return res.send(ret.join(""));
     });
 
