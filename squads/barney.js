@@ -6,6 +6,8 @@ var bodyParser = require('body-parser');
 var logger = require('morgan');
 var compression = require('compression');
 var methodOverride = require('method-override');
+var requestIp = require('request-ip');
+var jsonfile = require('jsonfile');
 var Ethel = require('./ethel.js');
 
 var PORT = process.env.PORT || 8888;
@@ -20,7 +22,8 @@ var Barney = (function() {
     my.Ethel = null;
     my.Lucy = null;
     my.heartIsBeating = false;
-
+    my.guests_book = null;
+    my.guests_book_location = cwd + "/.logs/guests_book.json";
     /**
      * Using angular dependncy injection shit to set up routes lol
      * this is fun
@@ -46,7 +49,7 @@ var Barney = (function() {
     }
     my.app = expressIO();
 
-
+    //appwide middlwares
     my.app.use(compression());
     my.app.use(methodOverride('X-HTTP-Method'))          // Microsoft
     my.app.use(methodOverride('X-HTTP-Method-Override')) // Google/GData
@@ -57,6 +60,7 @@ var Barney = (function() {
     my.app.use(bodyParser.json());
     my.app.use(bodyParser.urlencoded({ extended: false }));
 
+    //public stuff to return, all other stuff kept internal
     my.awesomeness = {
     	comeAlive: _I_love_everything_about,
     	trueStory: my.trueStory,
@@ -66,7 +70,7 @@ var Barney = (function() {
 
     //all get middleware
     function _getCB(req, res) {
-
+        //extend for individual route middlewares here
         var key = req.route.path;
         var getRoutes = my.routes.get;
         var _payload = getRoutes[key];
@@ -89,6 +93,9 @@ var Barney = (function() {
 
     function _set_up_routes() {
 
+        //set up middlewares for all gets
+        my.app.use(my.ipMiddleware);
+
         for (var key in my.routes.get) {
 
             if (!my.routes.get.hasOwnProperty(key)) return;
@@ -96,6 +103,41 @@ var Barney = (function() {
             console.log(my.name, 'is setting up get route', key);
             my.app.get(key, _getCB);
         }
+    }
+
+    my.ipMiddleware = function _ipMiddleware(req, res, next) {
+        var clientIp = requestIp.getClientIp(req); // on localhost > 127.0.0.1 
+        if(my.guests_book.hasOwnProperty(clientIp)){
+
+            my.guests_book[clientIp]["recent"] = (new Date()).toString();
+        }else{
+            my.guests_book[clientIp] = {
+                "since" : (new Date()).toString(),
+                "recent": (new Date()).toString()
+            };
+        }
+        _log_guests_book();
+        next();
+    };
+
+    my._should_log_guests_book = true;
+    my._should_log_guests_book_timer = null;
+
+    function _log_guests_book(){
+
+        if(my._should_log_guests_book === false) return;
+
+        jsonfile.writeFile(my.guests_book_location, my.guests_book, function (err) {
+          
+          if(err){
+            console.error(err);
+            }else{
+                my._should_log_guests_book = false;
+                //set interval
+                my._should_log_guests_book_timer = setTimeout(function _should_log_guests_book_setTimeout(){ my._should_log_guests_book = true; }, 720000);//720000only log every 12 mins
+    
+            }
+        });
     }
 
     function _isAlive(){
@@ -107,6 +149,20 @@ var Barney = (function() {
         /*and I'm not a guy who says that lightly, I'm a guy who has faked love his entire life, I'm a guy who thought love was just something idiots felt, but this woman has a hold on my heart that I could not break if I wanted to. And there have been times when I wanted to. It has been overwhelming and humbling, and even painful at times, but I could not stop loving her any more than I could stop breathing. I'm hopelessly, irretrievably in love with her. More than she knows.
          */
         if (my.heartIsBeating) return;
+        
+        jsonfile.readFile(my.guests_book_location, function(err, obj) {
+            if(err){
+                my.guests_book = {
+                    //"ip":{
+                    //  "since": date
+                    //  "most_recent": date
+                    //}
+                };
+                return;
+            }
+            my.guests_book = obj;
+            return;
+        });
 
         my.Ethel = new Ethel("Ethel");
         my.Lucy = _Lucy_;
