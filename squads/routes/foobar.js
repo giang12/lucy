@@ -1,6 +1,6 @@
 var make = require('../lib/make.js');
 
-function _foobar(Lucy, Ethel, req, res) {
+function _foobar(Lucy, Ethel, guests_book, req, res) {
     var ret = ['<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>'];
     Ethel.getMe()
         .then(function(User) {
@@ -11,6 +11,8 @@ function _foobar(Lucy, Ethel, req, res) {
 
             ret.push("<pre>Access_Token:<br> " + User.access_token);
             ret.push("<br><br>Refresh_Token:<br> " + User.refresh_token);
+            ret.push("<pre>Guests List:<br> " + JSON.stringify(guests_book, null, 2));
+
             ret.push("<br><br>User_Info:<br> " + JSON.stringify(User.info, null, 2) + "</pre>");
             ret.push(
                 "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +

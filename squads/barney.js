@@ -38,12 +38,12 @@ var Barney = (function() {
     		'/authCallback'	: ["Lucy", "Ethel", require('./routes/authCallback.js')],
     		//'/refresh_token': [function(req, res){return my.Ethel.refresh_token(req, res);}],
     		'/vault/:vaultAdd/:orderBy?' : ["Lucy", require('./routes/vault.js')],
-    		'/track/:vaultAdd/:trackName/:cb?' : ["Lucy", require('./routes/track.js')],
+    		'/track/:vaultAdd/:trackName/:cb?/:foobar?' : ["Lucy", require('./routes/track.js')],
     		'/search/:q' : ["Lucy", require('./routes/search.js')],
     		'/playback/:mediaFile': ["Lucy", require('./routes/playback.js')],
     		'/download/:vaultAdd/:trackName/:op' : [require('./routes/download.js')],
     		'/index/:orderBy?'		: ["Lucy", "Ethel", require('./routes/index.js')],
-            '/foobar'       : ["Lucy", "Ethel", require('./routes/foobar.js')],
+            '/foobar'       : ["Lucy", "Ethel", "guests_book", require('./routes/foobar.js')],
     		'*'				: [function(req, res) {res.redirect("/index");}],
     	}
     }
