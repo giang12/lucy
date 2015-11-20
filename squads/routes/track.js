@@ -9,6 +9,7 @@ var existsSync = require('exists-sync');
 module.exports = function(Lucy, req, res) {
     var vault = path.resolve(req.params.vaultAdd);
     var track = req.params.trackName;
+    var foobar = req.params.foobar;
     console.log("streaming", track, "from", req.params.vaultAdd);
     var track_info = vault + "/track_info";
     var track_aud = vault + "/track_audio";
@@ -61,8 +62,10 @@ module.exports = function(Lucy, req, res) {
 
 
         ret.push('</center>');
-        ret.push("<pre>Track Info:<br> " + JSON.stringify(info, null, 2) + "</pre>");
-
+        if(foobar){
+            ret.push("<pre>Track Info:<br> " + JSON.stringify(info, null, 2) + "</pre>");
+        }
+        ret.push('<pre>&nbsp;&nbsp;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_<br>&nbsp(__&nbsp;(_( (_&nbsp;(_(<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_)</pre>');
         ret.push(
             "<script>(function() {var node = document.createElement('style');document.body.appendChild(node);window.addStyleString = function(str) {node.innerHTML = str;}}());" +
             "addStyleString('pre{white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;}');" +
