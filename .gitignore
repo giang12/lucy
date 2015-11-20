@@ -7,3 +7,4 @@ npm-debug.log
 config-example/user.json
 *.sublime-workspace
 *.log
+*.heapsnapshot
