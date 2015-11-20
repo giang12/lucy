@@ -58,5 +58,9 @@
   },
   "homepage": "https://github.com/giang12/lucy",
   "directories": {},
-  "license": ""
+  "license": "",
+  "devDependencies": {
+    "heapdump": "^0.3.7",
+    "memwatch": "^0.2.2"
+  }
 }
