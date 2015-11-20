@@ -108,7 +108,7 @@ function _index(Lucy, Ethel, req, res) {
                     + "</script>"
                 );
 
-                ret.push("<script>function search(elm) { if (/^\s*$/.test(document.getElementById('searchBox').value)) {elm.disabled=false; return;} window.location = '/search/' + document.getElementById('searchBox').value };</script>");
+                ret.push("<script>function search(elm) { if (/^\s*$/.test(document.getElementById('searchBox').value)) {elm.disabled=false; return;} window.location = '/search/' + encodeURIComponent(document.getElementById('searchBox').value) };</script>");
                 ret.push('<script>var vaultList = new List("vault_items", {valueNames: [ "name"], page: '+ 100 +', plugins: [ ListPagination({ name: "pagination", paginationClass: "pagination", innerWindow: 8, outerWindow: 2}) ] });</script>');
 
                 return res.send(ret.join(""));
