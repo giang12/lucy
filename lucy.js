@@ -1,6 +1,6 @@
 "use strict";
 
- var memwatch = require('memwatch-next')
+ var memwatch = require('memwatch')
 ,heapdump = require('heapdump')
 ,util = require("util");
 

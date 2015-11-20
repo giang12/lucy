@@ -61,6 +61,6 @@
   "license": "",
   "devDependencies": {
     "heapdump": "^0.3.7",
-    "memwatch-next": "^0.2.10"
+    "memwatch": "^0.2.2"
   }
 }
