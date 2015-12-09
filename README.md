@@ -3,7 +3,7 @@
 ##HOW IS THIS OUTDATED ALREADY? WUUUHHHTTTTTT >o<##
 # lucy 
 
-[Live Version, experimental, hosted outof my bedroom, so my bad for the lag, maybe offline at any time for gods know what reasons](http://74.91.96.123/index)
+[Live Version, experimental, hosted outof my bedroom, so my bad for the lag, maybe offline at any time for gods know what reasons](http://74.91.96.245/index)
 
 
 [https://www.youtube.com/watch?v=iGmMrCsGoeo](https://www.youtube.com/watch?v=iGmMrCsGoeo)
