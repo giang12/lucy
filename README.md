@@ -1,4 +1,4 @@
-I've been taking this repo on/off private cuz I thought dang some of these git commits are less then helpful to say the least lol. & it is not nice if some "recruiters" see deez sheet. but hey it's just between you and me :D. So forgive me "recruiters", Lucy is not private anymore lol ^>^ (trying to make it look nicer dou, things take time ^_^')
+I've been taking this repo on/off private cuz I thought dang some of these git commits are less than helpful to say the least lol. & it is not nice if some "recruiters" see deez sheet. but hey it's just between you and me :D. So forgive me "recruiters", Lucy is not private anymore lol ^>^ (trying to make it look nicer dou, things take time ^_^')
 
 ##HOW IS THIS OUTDATED ALREADY? WUUUHHHTTTTTT >o<##
 # lucy 
